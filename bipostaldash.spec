@@ -1,5 +1,5 @@
-%define name python26-bipostal
-%define pythonname bipostal
+%define name python26-bipostaldash
+%define pythonname bipostaldash
 %define version 0.2
 %define release 1
 
