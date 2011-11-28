@@ -3,7 +3,8 @@ DEPS =
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
 VIRTUALENV = virtualenv
-NOSE = bin/nosetests -s --with-xunit
+#NOSE = bin/nosetests -s --with-xunit
+NOSE = bin/nosetests --with-xunit --cover-package=$(APPNAME)
 TESTS = $(APPNAME)/tests
 PYTHON = $(BIN)/python
 BUILDAPP = $(BIN)/buildapp

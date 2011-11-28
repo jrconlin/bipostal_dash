@@ -2,8 +2,8 @@ from pyramid.config import Configurator
 
 from mozsvc.config import load_into_settings
 
-from bipostal.resources import Root
-from bipostal.storage import configure_from_settings
+from bipostaldash.resources import Root
+from bipostaldash.storage import configure_from_settings
 
 
 def main(global_config, **settings):
@@ -13,7 +13,11 @@ def main(global_config, **settings):
     config = Configurator(root_factory=Root, settings=settings)
 
     config.registry['storage'] = configure_from_settings(
+
         'storage', settings['config'].get_map('storage'))
+
+    config.registry['auth'] = configure_from_settings (
+        'auth', settings['config'].get_map('auth'))
 
     # Adds authorization.
     config.include("pyramid_multiauth")
@@ -25,9 +29,9 @@ def main(global_config, **settings):
     config.include("mozsvc")
 
     # Adds application-specific views.
-    config.scan("bipostal.views")
+    config.scan("bipostaldash.views")
 
-    config.add_static_view('/', 'bipostal:backbone/',
+    config.add_static_view('/', 'bipostaldash:backbone/',
                            permission='authenticated')
 
     return config.make_wsgi_app()

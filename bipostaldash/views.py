@@ -8,6 +8,9 @@ from pyramid.security import authenticated_userid
 
 from cornice import Service
 
+gen_alias = Service(name='new_alias', path='/new_alias/',
+                    description='Return a new alias token')
+
 aliases = Service(name='aliases', path='/alias/',
                   description='Manage the email <=> alias store.')
 
@@ -21,25 +24,32 @@ logger = logging.getLogger(__file__)
 EMAIL_RE = '[^@]+@[^.]+.\w+'
 
 
-def new_alias(length=64, domain='browserid.org'):
+def make_alias(length=64, domain='browserid.org'):
     chars = string.digits + string.letters
     base = len(chars)
     token = ''.join(chars[ord(x) % base] for x in os.urandom(length))
     return '%s@%s' % (token, domain)
 
 
+@gen_alias.get()
+def new_alias(request=None, domain='browserid.org'):
+    return make_alias(domain=domain)
+
+
 @aliases.get(permission='authenticated')
 def list_aliases(request):
     db = request.registry['storage']
-    email = authenticated_userid(request)
-    aliases = db.get_aliases(email) or []
+    auth  = request.registry.get('auth', authenticated_userid)
+    email = auth(request)
+    aliases = db.get_aliases(email=email) or []
     return {'email': email, 'aliases': aliases}
 
 
 @aliases.post(permission='authenticated')
 def add_alias(request):
     db = request.registry['storage']
-    email = authenticated_userid(request)
+    auth  = request.registry.get('auth', authenticated_userid)
+    email = auth(request)
 
     if request.body:
         try:
@@ -51,7 +61,7 @@ def add_alias(request):
     if not re.match(EMAIL_RE, alias) or db.resolve_alias(alias):
         raise http.HTTPBadRequest()
 
-    rv = db.add_alias(email, alias)
+    rv = db.add_alias(email=email, alias=alias)
     logger.info('New alias for %s.', email)
     return rv
 
@@ -61,17 +71,18 @@ def get_alias(request):
     """Get the real address for a given alias."""
     db = request.registry['storage']
     alias = request.matchdict['alias']
-    rv = db.resolve_alias(alias)
+    rv = db.resolve_alias(alias=alias)
     return rv
 
 
 @alias_detail.delete(permission='authenticated')
 def delete_alias(request):
     """Delete an alias."""
-    email = authenticated_userid(request)
+    auth = request.registry.get('auth', authenticated_userid)
+    email = auth(request)
     db = request.registry['storage']
     alias = request.matchdict['alias']
-    rv = db.delete_alias(email, alias)
+    rv = db.delete_alias(email=email, alias=alias)
     logger.info('Deleting alias for %s.', email)
     return rv
 
@@ -80,12 +91,12 @@ def delete_alias(request):
 def change_alias(request):
     """Make a change to an existing alias."""
     try:
-        active = request.json_body['active']
+        active = request.json_body['status']
     except Exception:
         raise http.HTTPBadRequest()
-
-    email = authenticated_userid(request)
+    auth  = request.registry.get('auth', authenticated_userid)
+    email = auth(request)
     db = request.registry['storage']
     alias = request.matchdict['alias']
-    rv = db.add_alias(email, alias, active)
+    rv = db.add_alias(email=email, alias=alias, status=active)
     return rv

@@ -11,7 +11,7 @@ class ViewTests(unittest.TestCase):
         testing.tearDown()
 
     def test_user_info_service(self):
-        from bipostal.views import get_info, set_info
+        from bipostaldash.views import get_info
         request = testing.DummyRequest()
         request.matchdict = {"username": "user1"}
         info = get_info(request)

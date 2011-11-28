@@ -13,9 +13,9 @@ with open(os.path.join(here, 'CHANGES.txt')) as f:
 requires = ['cornice', 'pyramid_whoauth', 'mozsvc']
 
 
-setup(name='bipostal',
+setup(name='bipostaldash',
       version='0.2',
-      description='bipostal',
+      description='bipostaldash',
       long_description=README + '\n\n' +  CHANGES,
       classifiers=[
         "Programming Language :: Python",
@@ -32,10 +32,10 @@ setup(name='bipostal',
       zip_safe=False,
       install_requires=requires,
       tests_require=requires,
-      test_suite="bipostal",
+      test_suite="bipostaldash",
       entry_points = """\
       [paste.app_factory]
-      main = bipostal:main
+      main = bipostaldash:main
       """,
       paster_plugins=['pyramid'],
       )

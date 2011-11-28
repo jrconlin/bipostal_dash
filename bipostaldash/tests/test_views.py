@@ -8,10 +8,9 @@ from pyramid import testing
 from pyramid import httpexceptions as http
 from nose.tools import eq_
 
-import bipostal
-from bipostal.storage import mem
-from bipostal import views
-
+from bipostaldash.storage import mem
+from bipostaldash import views
+import bipostaldash
 
 class JSONRequest(testing.DummyRequest):
 
@@ -40,7 +39,7 @@ class ViewTest(unittest2.TestCase):
 
     def test_add_alias(self):
         response = views.add_alias(self.request)
-        eq_(set(response.keys()), set(['email', 'alias', 'active']))
+        eq_(set(response.keys()), set(['email', 'alias', 'origin', 'status']))
         eq_(response['email'], self.email)
 
         eq_(views.list_aliases(self.request),
@@ -49,13 +48,17 @@ class ViewTest(unittest2.TestCase):
     def test_add_alias_from_body(self):
         request = JSONRequest(post=json.dumps({'alias': 'x@y.com'}))
         response = views.add_alias(request)
-        eq_(response, {'email': self.email, 'alias': 'x@y.com',
-                       'active': True})
+        eq_(response, {'email': self.email,
+                       'origin': '',
+                       'alias': 'x@y.com',
+                       'status': 'active'})
 
         eq_(views.list_aliases(self.request),
             {'email': self.email,
-             'aliases': [{'email': self.email, 'alias': 'x@y.com',
-                          'active': True}]})
+             'aliases': [{'email': self.email,
+                          'origin': '',
+                          'alias': 'x@y.com',
+                          'status': 'active'}]})
 
     def test_add_alias_from_body_dupe(self):
         request = JSONRequest(post=json.dumps({'alias': 'x@y.com'}))
@@ -79,53 +82,70 @@ class ViewTest(unittest2.TestCase):
         alias = views.add_alias(self.request)['alias']
         self.request.matchdict = {'alias': alias}
         response = views.get_alias(self.request)
-        eq_(response, {'email': self.email, 'alias': alias, 'active': True})
+        eq_(response, {'email': self.email,
+                       'alias': alias,
+                       'origin': '',
+                       'status': 'active'})
 
     def test_list_aliases(self):
         alias1 = views.add_alias(self.request)
         alias2 = views.add_alias(self.request)
+        import pdb; pdb.set_trace()
         response = views.list_aliases(self.request)
-        eq_(response, {'email': self.email, 'aliases': [alias1, alias2]})
+        eq_(response, {'email': self.email,
+                       'aliases': [alias1, alias2],
+                       })
 
     def test_delete_alias(self):
         alias = views.add_alias(self.request)['alias']
         self.request.matchdict = {'alias': alias}
         response = views.delete_alias(self.request)
-        eq_(response, {'email': self.email, 'alias': alias, 'active': False})
-
+        eq_(response, {'email': self.email,
+                       'alias': alias,
+                       'origin': '',
+                       'status': 'deleted'})
         self.request.matchdict = None
         eq_(views.list_aliases(self.request),
             {'email': self.email, 'aliases': []})
 
     def test_change_alias(self):
         alias = views.add_alias(self.request)['alias']
-
-        request = JSONRequest(post=json.dumps({'active': False}))
+        ## WTF is this doing?
+        request = JSONRequest(post=json.dumps({'status': 'deleted'}))
         request.matchdict = {'alias': alias}
         response = views.change_alias(request)
-        eq_(response, {'email': self.email, 'alias': alias, 'active': False})
+        eq_(response, {'email': self.email,
+                       'origin': '',
+                       'alias': alias,
+                       'status': 'deleted'})
 
-        request = JSONRequest(post=json.dumps({'active': True}))
+        request = JSONRequest(post=json.dumps({'status': 'active'}))
         request.matchdict = {'alias': alias}
         response = views.change_alias(request)
-        eq_(response, {'email': self.email, 'alias': alias, 'active': True})
+        eq_(response, {'email': self.email,
+                       'origin': '',
+                       'alias': alias,
+                       'status': 'active'})
 
 
-@mock.patch('bipostal.views.os.urandom')
+@mock.patch('bipostaldash.views.os.urandom')
 def test_new_alias(urandom_mock):
     urandom_mock.return_value = ''.join(map(chr, [0, 1, 61, 62, 63, 64]))
-    eq_(views.new_alias(), '01Z012@browserid.org')
-    eq_(views.new_alias(domain='woo.com'), '01Z012@woo.com')
+    request = JSONRequest(get="")
+    eq_(views.new_alias(request), '01Z012@browserid.org')
+    eq_(views.new_alias(request, domain='woo.com'), '01Z012@woo.com')
 
 
 class AppTest(unittest2.TestCase):
 
+
     def setUp(self):
         # Grab the development ini file.
         p = os.path
-        ini = p.join(p.dirname(__file__), '../../etc/bipostal-dev.ini')
-        app = bipostal.main({'__file__': p.abspath(ini)})
+        ini = p.join(p.dirname(__file__), '../../etc/bipostaldash-dev.ini')
+        app = bipostaldash.main({'__file__': p.abspath(ini)})
         self.testapp = webtest.TestApp(app)
 
     def test_root(self):
         self.testapp.get('/', status=403)
+
