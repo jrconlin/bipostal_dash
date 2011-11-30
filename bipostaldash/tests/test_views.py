@@ -90,7 +90,6 @@ class ViewTest(unittest2.TestCase):
     def test_list_aliases(self):
         alias1 = views.add_alias(self.request)
         alias2 = views.add_alias(self.request)
-        import pdb; pdb.set_trace()
         response = views.list_aliases(self.request)
         eq_(response, {'email': self.email,
                        'aliases': [alias1, alias2],

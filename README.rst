@@ -11,6 +11,10 @@ Getting Started
 
     pip install -r dev-reqs.txt
 
+3. Install bipostal 
+
+   bin/python setup.py install 
+
 3. Start the server::
 
     paster serve etc/bipostal-dev.ini

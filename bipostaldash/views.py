@@ -23,8 +23,11 @@ logger = logging.getLogger(__file__)
 # Not the best; just make sure it looks like x@y.z.
 EMAIL_RE = '[^@]+@[^.]+.\w+'
 
+def default_domain(request):
+    return request.environ.get('HTTP_HOST')
 
-def make_alias(length=64, domain='browserid.org'):
+
+def make_alias(length=64, domain=None):
     chars = string.digits + string.letters
     base = len(chars)
     token = ''.join(chars[ord(x) % base] for x in os.urandom(length))
@@ -32,15 +35,18 @@ def make_alias(length=64, domain='browserid.org'):
 
 
 @gen_alias.get()
-def new_alias(request=None, domain='browserid.org'):
+def new_alias(root=None, request=None, domain=None):
+    if domain is None:
+        domain = default_domain(request)
     return make_alias(domain=domain)
 
 
 @aliases.get(permission='authenticated')
 def list_aliases(request):
+    import pdb; pdb.set_trace()
     db = request.registry['storage']
     auth  = request.registry.get('auth', authenticated_userid)
-    email = auth(request)
+    email = auth.get_user_id(request)
     aliases = db.get_aliases(email=email) or []
     return {'email': email, 'aliases': aliases}
 
@@ -49,7 +55,8 @@ def list_aliases(request):
 def add_alias(request):
     db = request.registry['storage']
     auth  = request.registry.get('auth', authenticated_userid)
-    email = auth(request)
+    import pdb; pdb.set_trace()
+    email = auth.get_user_id(request)
 
     if request.body:
         try:
@@ -79,7 +86,7 @@ def get_alias(request):
 def delete_alias(request):
     """Delete an alias."""
     auth = request.registry.get('auth', authenticated_userid)
-    email = auth(request)
+    email = auth.get_user_id(request)
     db = request.registry['storage']
     alias = request.matchdict['alias']
     rv = db.delete_alias(email=email, alias=alias)
@@ -95,7 +102,7 @@ def change_alias(request):
     except Exception:
         raise http.HTTPBadRequest()
     auth  = request.registry.get('auth', authenticated_userid)
-    email = auth(request)
+    email = auth.get_user_id(request)
     db = request.registry['storage']
     alias = request.matchdict['alias']
     rv = db.add_alias(email=email, alias=alias, status=active)

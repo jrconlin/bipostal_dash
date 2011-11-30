@@ -25,6 +25,7 @@ class Storage(object):
 
     def resolve_alias(self, alias, origin='', status='active'):
         lookup = 's2u:%s' % alias
+        import pdb; pdb.set_trace()
         mresult = self._mcache.get(lookup)
         if mresult is None:
             connection = self._pool.connection()
@@ -144,7 +145,6 @@ class Storage(object):
 
     def delete_alias(self, user, alias, origin=''):
         result = self.set_status_alias(user, alias, origin, status='deleted')
-        print "deleting %s for %s " % (alias, user)
         self._mcache.delete('s2u:%s' % alias)
         return result
 
