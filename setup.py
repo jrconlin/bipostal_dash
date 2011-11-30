@@ -10,7 +10,8 @@ with open(os.path.join(here, 'README.rst')) as f:
 with open(os.path.join(here, 'CHANGES.txt')) as f:
     CHANGES = f.read()
 
-requires = ['cornice', 'pyramid_whoauth', 'mozsvc']
+requires = ['cornice', 'pyramid_whoauth', 'mozsvc',
+            'mysql-python', 'python-memcached']
 
 
 setup(name='bipostaldash',

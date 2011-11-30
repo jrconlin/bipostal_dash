@@ -11,6 +11,13 @@ Getting Started
 
     pip install -r dev-reqs.txt
 
+2.5 You will need to manually install the Mozilla Services library
+
+    cd deps
+    hg clone http://hg.mozilla.org/services/server-core/
+    cd server-core
+    ../../bin/python setup.py install
+
 3. Start the server::
 
     paster serve etc/bipostal-dev.ini

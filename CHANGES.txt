@@ -1,3 +1,12 @@
+0.1
+---
+
+- renamed to bipostal_dash to avoid conflict with existing package
+- added "origin" to calls (to allow for site differentiation).
+- added mysql_memcache (Memcache, with mysql long term storage).
+- fixed tests to handle new params and config.
+
+
 0.0
 ---
 
