@@ -40,7 +40,7 @@ def new_alias(request=None, domain='browserid.org'):
 def list_aliases(request):
     db = request.registry['storage']
     auth  = request.registry.get('auth', authenticated_userid)
-    email = auth(request)
+    email = auth.get_user_id(request)
     aliases = db.get_aliases(email=email) or []
     return {'email': email, 'aliases': aliases}
 
@@ -49,7 +49,7 @@ def list_aliases(request):
 def add_alias(request):
     db = request.registry['storage']
     auth  = request.registry.get('auth', authenticated_userid)
-    email = auth(request)
+    email = auth.get_user_id(request)
 
     if request.body:
         try:
@@ -79,7 +79,7 @@ def get_alias(request):
 def delete_alias(request):
     """Delete an alias."""
     auth = request.registry.get('auth', authenticated_userid)
-    email = auth(request)
+    email = auth.get_user_id(request)
     db = request.registry['storage']
     alias = request.matchdict['alias']
     rv = db.delete_alias(email=email, alias=alias)
@@ -95,7 +95,7 @@ def change_alias(request):
     except Exception:
         raise http.HTTPBadRequest()
     auth  = request.registry.get('auth', authenticated_userid)
-    email = auth(request)
+    email = auth.get_user_id(request)
     db = request.registry['storage']
     alias = request.matchdict['alias']
     rv = db.add_alias(email=email, alias=alias, status=active)
