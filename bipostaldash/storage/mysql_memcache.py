@@ -25,6 +25,7 @@ class Storage(object):
 
     def resolve_alias(self, alias, origin='', status='active'):
         lookup = 's2u:%s' % alias
+        import pdb; pdb.set_trace()
         mresult = self._mcache.get(lookup)
         if mresult is None:
             connection = self._pool.connection()

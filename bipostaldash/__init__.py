@@ -13,7 +13,6 @@ def main(global_config, **settings):
     config = Configurator(root_factory=Root, settings=settings)
 
     config.registry['storage'] = configure_from_settings(
-
         'storage', settings['config'].get_map('storage'))
 
     config.registry['auth'] = configure_from_settings (

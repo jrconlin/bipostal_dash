@@ -16,9 +16,11 @@ Getting Started
     cd deps
     hg clone http://hg.mozilla.org/services/server-core/
     cd server-core
-    ../../bin/python setup.py install
+3. Install bipostal 
 
-3. Start the server::
+   bin/python setup.py install 
+
+4. Start the server::
 
     paster serve etc/bipostal-dev.ini
 

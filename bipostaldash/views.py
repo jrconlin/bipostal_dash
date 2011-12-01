@@ -23,8 +23,11 @@ logger = logging.getLogger(__file__)
 # Not the best; just make sure it looks like x@y.z.
 EMAIL_RE = '[^@]+@[^.]+.\w+'
 
+def default_domain(request):
+    return request.environ.get('HTTP_HOST')
 
-def make_alias(length=64, domain='browserid.org'):
+
+def make_alias(length=64, domain=None):
     chars = string.digits + string.letters
     base = len(chars)
     token = ''.join(chars[ord(x) % base] for x in os.urandom(length))
@@ -32,12 +35,15 @@ def make_alias(length=64, domain='browserid.org'):
 
 
 @gen_alias.get()
-def new_alias(request=None, domain='browserid.org'):
+def new_alias(root=None, request=None, domain=None):
+    if domain is None:
+        domain = default_domain(request)
     return make_alias(domain=domain)
 
 
 @aliases.get(permission='authenticated')
 def list_aliases(request):
+    import pdb; pdb.set_trace()
     db = request.registry['storage']
     auth  = request.registry.get('auth', authenticated_userid)
     email = auth.get_user_id(request)
