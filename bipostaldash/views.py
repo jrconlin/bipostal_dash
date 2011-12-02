@@ -11,6 +11,9 @@ from cornice import Service
 gen_alias = Service(name='new_alias', path='/new_alias/',
                     description='Return a new alias token')
 
+login_service  = Service(name='login', path='/login/',
+                    description='Login to service')
+
 aliases = Service(name='aliases', path='/alias/',
                   description='Manage the email <=> alias store.')
 
@@ -106,3 +109,19 @@ def change_alias(request):
     alias = request.matchdict['alias']
     rv = db.add_alias(email=email, alias=alias, status=active)
     return rv
+
+@login_service.post()
+def login(request):
+    """ Accept the browserid auth element """
+    try:
+        auth = request.registry.get('auth', authenticated_userid)
+        email = auth.get_user_id(request)
+        if email is None:
+            raise http.HTTPUnauthorized()
+        db = request.registry['storage']
+        db.create_user(email=email)
+        # set the beakerid
+    except Exception, e:
+        logging.info('Invalid or missing credentials [%s]' % repr(e))
+        raise http.HTTPUnauthorized()
+    return list_aliases(request)

@@ -140,7 +140,7 @@ class Storage(object):
                     'origin': origin,
                     'status': status}
         except Exception, e:
-            logging.error('Could not %s alias %s for user %s "%s"' %(
+            logging.error('Could not %s alias %s for user %s "%s"' % (
                 status, alias, user, str(e)))
 
     def delete_alias(self, user, alias, origin=''):
@@ -159,3 +159,19 @@ class Storage(object):
         db.execute('delete from %s;' % self._stable)
         self._mcache.flush_all()
         connection.close()
+
+    def create_user(self, user):
+        user_record = self._mcache.get('uid:%s' % user)
+        if user_record is None:
+            try:
+                db = connection.cursor()
+                db.execute("insert into %s (user) values ('%r');" % (
+                    MySQLdb.escape_string(user))
+                self._mcache.set('uid:%s' % user, json.dumps({
+                        'created': int(time.time()),
+                    }))
+            except Exception, e:
+                logger.error("Could not create new user [%s]" % 
+                    repr(e))
+                raise
+
