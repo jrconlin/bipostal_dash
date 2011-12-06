@@ -4,6 +4,7 @@ import memcache
 import re
 import logging
 import time
+import json
 
 class Storage(object):
 
@@ -25,7 +26,6 @@ class Storage(object):
 
     def resolve_alias(self, alias, origin='', status='active'):
         lookup = 's2u:%s' % alias
-        import pdb; pdb.set_trace()
         mresult = self._mcache.get(lookup)
         if mresult is None:
             connection = self._pool.connection()
@@ -164,14 +164,15 @@ class Storage(object):
         user_record = self._mcache.get('uid:%s' % user)
         if user_record is None:
             try:
+                connection = self._pool.connection()
                 db = connection.cursor()
                 db.execute("insert into %s (user) values ('%r');" % (
-                    MySQLdb.escape_string(user))
-                self._mcache.set('uid:%s' % user, json.dumps({
-                        'created': int(time.time()),
-                    }))
+                    MySQLdb.escape_string(user)))
+                self._mcache.set('uid:%s' % user, 
+                        json.dumps({'created': int(time.time())}))
+                return user
             except Exception, e:
-                logger.error("Could not create new user [%s]" % 
+                logging.error("Could not create new user [%s]" % 
                     repr(e))
                 raise
-
+        return user

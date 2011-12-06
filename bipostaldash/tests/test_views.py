@@ -131,8 +131,11 @@ class ViewTest(unittest2.TestCase):
 def test_new_alias(urandom_mock):
     urandom_mock.return_value = ''.join(map(chr, [0, 1, 61, 62, 63, 64]))
     request = JSONRequest(get="")
-    eq_(views.new_alias(request), '01Z012@browserid.org')
-    eq_(views.new_alias(request, domain='woo.com'), '01Z012@woo.com')
+    request.environ['HTTP_HOST'] = 'browserid.org'
+    eq_(views.new_alias(request), 
+            '01Z012@browserid.org')
+    eq_(views.new_alias(request, domain='woo.com'), 
+            '01Z012@woo.com')
 
 
 class AppTest(unittest2.TestCase):

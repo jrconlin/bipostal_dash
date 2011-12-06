@@ -4,7 +4,7 @@ import re
 import string
 
 from pyramid import httpexceptions as http
-from pyramid.security import authenticated_userid
+from bipostaldash.auth.default import DefaultAuth
 
 from cornice import Service
 
@@ -38,7 +38,7 @@ def make_alias(length=64, domain=None):
 
 
 @gen_alias.get()
-def new_alias(root=None, request=None, domain=None):
+def new_alias(request=None, root=None, domain=None):
     if domain is None:
         domain = default_domain(request)
     return make_alias(domain=domain)
@@ -46,9 +46,10 @@ def new_alias(root=None, request=None, domain=None):
 
 @aliases.get(permission='authenticated')
 def list_aliases(request):
-    import pdb; pdb.set_trace()
     db = request.registry['storage']
-    auth  = request.registry.get('auth', authenticated_userid)
+    authClass  = request.registry.get('auth', DefaultAuth)
+    auth = authClass()
+    #email = auth.get_user_id(request)
     email = auth.get_user_id(request)
     aliases = db.get_aliases(email=email) or []
     return {'email': email, 'aliases': aliases}
@@ -57,7 +58,8 @@ def list_aliases(request):
 @aliases.post(permission='authenticated')
 def add_alias(request):
     db = request.registry['storage']
-    auth  = request.registry.get('auth', authenticated_userid)
+    authClass  = request.registry.get('auth', DefaultAuth)
+    auth = authClass()
     email = auth.get_user_id(request)
 
     if request.body:
@@ -87,7 +89,8 @@ def get_alias(request):
 @alias_detail.delete(permission='authenticated')
 def delete_alias(request):
     """Delete an alias."""
-    auth = request.registry.get('auth', authenticated_userid)
+    authClass = request.registry.get('auth', DefaultAuth)
+    auth = authClass()
     email = auth.get_user_id(request)
     db = request.registry['storage']
     alias = request.matchdict['alias']
@@ -103,7 +106,8 @@ def change_alias(request):
         active = request.json_body['status']
     except Exception:
         raise http.HTTPBadRequest()
-    auth  = request.registry.get('auth', authenticated_userid)
+    authClass  = request.registry.get('auth', DefaultAuth)
+    auth = authClass()
     email = auth.get_user_id(request)
     db = request.registry['storage']
     alias = request.matchdict['alias']
@@ -114,7 +118,8 @@ def change_alias(request):
 def login(request):
     """ Accept the browserid auth element """
     try:
-        auth = request.registry.get('auth', authenticated_userid)
+        authClass = request.registry.get('auth', DefaultAuth)
+        auth = authClass()
         email = auth.get_user_id(request)
         if email is None:
             raise http.HTTPUnauthorized()

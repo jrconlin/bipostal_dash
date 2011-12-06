@@ -13,17 +13,25 @@ class BrowserIDAuth(object):
     def create_user(self, assertion=None, **kw):
         self._raw_assertion = assertion
         
-    def authenticate_user(self, audience='localhost', assertion=None):
-        import pdb; pdb.set_trace()
+    def get_user_id(self, 
+            request=None, 
+            audience=None,
+            assertion=None):
+        if audience is None:
+            audience = self._server
+        if assertion is None:
+            assertion = request.params.get('assertion')
         if assertion is None:
             return None
         try:
             #note: this does not validate the assertion (yet).
             # Still need to pull the public key from the server
             parsed_cert = self._parse_assertion(assertion)
-            return parsed_cert['certificates'][0]['principal']['email']
+            return parsed_cert['certificates'][0]\
+                    ['payload']['principal']['email']
         except Exception, e:
             logger.info("Bad assertion [%s]" % repr(e))
+            return None
 
     def _decode(self, dstr):
         try:

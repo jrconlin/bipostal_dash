@@ -93,6 +93,7 @@ class MemStorageTest(StorageTest):
         self.storage = configure_from_settings('storage', settings)
 
 
+""""
 class RedisStorageTest(StorageTest):
     __test__ = True
 
@@ -107,7 +108,7 @@ class RedisStorageTest(StorageTest):
         self.storage = configure_from_settings('storage', settings)
         # Clear out the db for testing.
         self.storage.redis.flushall()
-
+"""
 
 class MysqlMemcacheTest(StorageTest):
     __test__ = True
