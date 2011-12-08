@@ -32,6 +32,10 @@ class ViewTest(unittest2.TestCase):
         self.config.testing_securitypolicy(userid=self.email, permissive=True)
         self.request = testing.DummyRequest()
         self.request.registry['storage'] = mem.Storage()
+        # Default Auth:
+        # self.request.registry['auth'] = DummyAuth()
+        # Tested by test_oauth
+        # self.request.registry['auth'] = bipostaldash.auth.oauth.OAuth()
         self.request.registry.settings['email_domain'] = 'browserid.org'
 
     def tearDown(self):
