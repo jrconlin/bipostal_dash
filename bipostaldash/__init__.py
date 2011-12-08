@@ -18,6 +18,9 @@ def main(global_config, **settings):
     config.registry['auth'] = configure_from_settings (
         'auth', settings['config'].get_map('auth'))
 
+    config.registry['dash_auth'] = configure_from_settings (
+        'dash_auth', settings['config'].get_map('dash_auth'))
+
     # Adds authorization.
     config.include("pyramid_multiauth")
 
