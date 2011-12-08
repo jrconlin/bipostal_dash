@@ -34,6 +34,7 @@ def main(global_config, **settings):
     config.scan("bipostaldash.views")
 
     config.add_static_view('/', 'bipostaldash:backbone/',
-                           permission='authenticated')
+            # permission="authenticated"
+            )
 
     return config.make_wsgi_app()

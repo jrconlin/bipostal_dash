@@ -47,8 +47,7 @@ def new_alias(request=None, root=None, domain=None):
 @aliases.get(permission='authenticated')
 def list_aliases(request):
     db = request.registry['storage']
-    authClass  = request.registry.get('auth', DefaultAuth)
-    auth = authClass()
+    auth = request.registry.get('auth', DefaultAuth)
     #email = auth.get_user_id(request)
     email = auth.get_user_id(request)
     aliases = db.get_aliases(email=email) or []
@@ -58,8 +57,7 @@ def list_aliases(request):
 @aliases.post(permission='authenticated')
 def add_alias(request):
     db = request.registry['storage']
-    authClass  = request.registry.get('auth', DefaultAuth)
-    auth = authClass()
+    auth = request.registry.get('auth', DefaultAuth)
     email = auth.get_user_id(request)
 
     if request.body:
@@ -89,8 +87,7 @@ def get_alias(request):
 @alias_detail.delete(permission='authenticated')
 def delete_alias(request):
     """Delete an alias."""
-    authClass = request.registry.get('auth', DefaultAuth)
-    auth = authClass()
+    auth = request.registry.get('auth', DefaultAuth)
     email = auth.get_user_id(request)
     db = request.registry['storage']
     alias = request.matchdict['alias']
@@ -106,8 +103,7 @@ def change_alias(request):
         active = request.json_body['status']
     except Exception:
         raise http.HTTPBadRequest()
-    authClass  = request.registry.get('auth', DefaultAuth)
-    auth = authClass()
+    auth = request.registry.get('auth', DefaultAuth)
     email = auth.get_user_id(request)
     db = request.registry['storage']
     alias = request.matchdict['alias']
@@ -115,15 +111,16 @@ def change_alias(request):
     return rv
 
 @login_service.post()
+@login_service.get()
 def login(request):
     """ Accept the browserid auth element """
     try:
         # Use a different auth mechanism for user login.
-        authClass = request.registry.get('dash_auth', DefaultAuth)
-        auth = authClass()
+        import pdb; pdb.set_trace()
+        auth = request.registry.get('dash_auth', DefaultAuth)
         email = auth.get_user_id(request)
         if email is None:
-            raise http.HTTPUnauthorized()
+            raise http.HTTPSeeOther(location = "/login.html")
         db = request.registry['storage']
         db.create_user(email=email)
         # set the beakerid
