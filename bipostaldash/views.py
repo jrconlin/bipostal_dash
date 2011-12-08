@@ -118,7 +118,7 @@ def change_alias(request):
 def login(request):
     """ Accept the browserid auth element """
     try:
-        authClass = request.registry.get('auth', DefaultAuth)
+        authClass = request.registry.get('dash_auth', DefaultAuth)
         auth = authClass()
         email = auth.get_user_id(request)
         if email is None:
