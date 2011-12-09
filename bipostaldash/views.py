@@ -4,21 +4,24 @@ import re
 import string
 
 from pyramid import httpexceptions as http
+from pyramid.response import Response
 from bipostaldash.auth.default import DefaultAuth
+from mako.template import Template
 
 from cornice import Service
 
+# Cornice currently renders JSON only. So only REST functions use it.
 gen_alias = Service(name='new_alias', path='/new_alias/',
                     description='Return a new alias token')
-
-login_service  = Service(name='login', path='/login/',
-                    description='Login to service')
 
 aliases = Service(name='aliases', path='/alias/',
                   description='Manage the email <=> alias store.')
 
 alias_detail = Service(name='alias-detail', path='/alias/{alias}',
                        description='Manage a single alias.')
+
+login_service  = Service(name='login', path='/',
+                    description='Login to service')
 
 
 logger = logging.getLogger(__file__)
@@ -46,9 +49,9 @@ def new_alias(request=None, root=None, domain=None):
 
 @aliases.get(permission='authenticated')
 def list_aliases(request):
+    import pdb; pdb.set_trace()
     db = request.registry['storage']
-    authClass  = request.registry.get('auth', DefaultAuth)
-    auth = authClass()
+    auth = request.registry.get('auth', DefaultAuth)
     #email = auth.get_user_id(request)
     email = auth.get_user_id(request)
     aliases = db.get_aliases(email=email) or []
@@ -58,8 +61,7 @@ def list_aliases(request):
 @aliases.post(permission='authenticated')
 def add_alias(request):
     db = request.registry['storage']
-    authClass  = request.registry.get('auth', DefaultAuth)
-    auth = authClass()
+    auth = request.registry.get('auth', DefaultAuth)
     email = auth.get_user_id(request)
 
     if request.body:
@@ -89,8 +91,7 @@ def get_alias(request):
 @alias_detail.delete(permission='authenticated')
 def delete_alias(request):
     """Delete an alias."""
-    authClass = request.registry.get('auth', DefaultAuth)
-    auth = authClass()
+    auth = request.registry.get('auth', DefaultAuth)
     email = auth.get_user_id(request)
     db = request.registry['storage']
     alias = request.matchdict['alias']
@@ -106,27 +107,41 @@ def change_alias(request):
         active = request.json_body['status']
     except Exception:
         raise http.HTTPBadRequest()
-    authClass  = request.registry.get('auth', DefaultAuth)
-    auth = authClass()
+    auth = request.registry.get('auth', DefaultAuth)
     email = auth.get_user_id(request)
     db = request.registry['storage']
     alias = request.matchdict['alias']
     rv = db.add_alias(email=email, alias=alias, status=active)
     return rv
 
+@login_service.get()
 @login_service.post()
 def login(request):
     """ Accept the browserid auth element """
     try:
-        authClass = request.registry.get('dash_auth', DefaultAuth)
-        auth = authClass()
+        import pdb; pdb.set_trace()
+        session = request.session
+        # Use a different auth mechanism for user login.
+        auth = request.registry.get('dash_auth', DefaultAuth)
         email = auth.get_user_id(request)
         if email is None:
-            raise http.HTTPUnauthorized()
+            template = Template(filename = os.path.join('bipostaldash',
+                'templates', 'login.mako'))
+            response = Response(str(template.render()))
+            del(session['uid'])
+            session.save()
+            return response
         db = request.registry['storage']
-        db.create_user(email=email)
-        # set the beakerid
+        db.create_user(user=email)
     except Exception, e:
         logging.info('Invalid or missing credentials [%s]' % repr(e))
         raise http.HTTPUnauthorized()
-    return list_aliases(request)
+    template = Template(filename = os.path.join('bipostaldash',
+            'templates', 'mainpage.mako'))
+    response = Response(str(template.render()))
+    # set the beakerid
+    session['uid'] = email
+    session.save()
+    return response;
+
+

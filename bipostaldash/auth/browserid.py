@@ -14,7 +14,7 @@ class BrowserIDAuth(object):
         self._raw_assertion = assertion
         
     def get_user_id(self, 
-            request=None, 
+            request, 
             audience=None,
             assertion=None):
         if audience is None:
@@ -24,6 +24,9 @@ class BrowserIDAuth(object):
         if assertion is None:
             return None
         try:
+            session = request.session
+            if (session.get('uid')):
+                return session.get('uid')
             #note: this does not validate the assertion (yet).
             # Still need to pull the public key from the server
             parsed_cert = self._parse_assertion(assertion)
@@ -53,7 +56,7 @@ class BrowserIDAuth(object):
                     'payload': json.loads(self._decode(rpayload)),
                     'sig': self._decode(rsig)})
             jwso['certificates'] = new_certs
-            (rhead, rpayload, rsig) = jwso['assertion'].split(',')
+            (rhead, rpayload, rsig) = jwso['assertion'].split('.')
             jwso['assertion'] = {'head': json.loads(self._decode(rhead)),
                     'payload': json.loads(self._decode(rpayload)),
                     'ig': self._decode(rsig)}

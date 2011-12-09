@@ -10,6 +10,7 @@ from nose.tools import eq_
 
 from bipostaldash.storage import mem
 from bipostaldash import views
+from bipostaldash.auth.default import DefaultAuth
 import bipostaldash
 
 class JSONRequest(testing.DummyRequest):
@@ -33,7 +34,7 @@ class ViewTest(unittest2.TestCase):
         self.request = testing.DummyRequest()
         self.request.registry['storage'] = mem.Storage()
         # Default Auth:
-        # self.request.registry['auth'] = DummyAuth()
+        self.request.registry['auth'] = DefaultAuth()
         # Tested by test_oauth
         # self.request.registry['auth'] = bipostaldash.auth.oauth.OAuth()
         self.request.registry.settings['email_domain'] = 'browserid.org'

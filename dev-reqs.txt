@@ -1,6 +1,7 @@
 MoPyTools
 nose
 WebTest
+pyramid_beaker
 redis == 2.4.10
 mock == 0.7.2
 # memcached

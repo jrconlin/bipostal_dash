@@ -40,6 +40,9 @@ class OAuth(object):
     """ Absolutely minimal OAuth function to validate args and return
         an email. """
 
+    def __init__(self, **kw):
+        pass
+
     def _oEsc(self, string):
         if not string:
             return ''

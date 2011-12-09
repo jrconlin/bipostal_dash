@@ -25,7 +25,7 @@ class Storage(object):
             logging.error("""Could not initialize Storage: "%s" """, str(ex))
 
     def resolve_alias(self, alias, origin='', status='active'):
-        lookup = 's2u:%s' % alias
+        lookup = str('s2u:%s' % str(alias))
         mresult = self._mcache.get(lookup)
         if mresult is None:
             connection = self._pool.connection()
@@ -42,7 +42,7 @@ class Storage(object):
             connection.close()
             if result is None:
                 return {}
-            mresult = result[0]
+            mresult = str(result[0])
             self._mcache.set(lookup, mresult)
         return {'email': mresult,
                 'origin':origin,
@@ -81,7 +81,7 @@ class Storage(object):
                 db.execute(query)
             else:
                 alias = row[0]
-            self._mcache.set('s2u:%s' % alias, user)
+            self._mcache.set('s2u:%s' % str(alias), str(user))
             connection.close()
             return {'email': user,
                     'alias': alias,
@@ -145,12 +145,12 @@ class Storage(object):
 
     def delete_alias(self, user, alias, origin=''):
         result = self.set_status_alias(user, alias, origin, status='deleted')
-        self._mcache.delete('s2u:%s' % alias)
+        self._mcache.delete('s2u:%s' % str(alias))
         return result
 
     def disable_alias(self, user, alias, origin=''):
         result = self.set_status_alias(user, alias, origin, status='disabled')
-        self._mcache.delete('s2u:%s' % alias)
+        self._mcache.delete('s2u:%s' % str(alias))
         return result
 
     def flushall(self):
@@ -160,15 +160,23 @@ class Storage(object):
         self._mcache.flush_all()
         connection.close()
 
-    def create_user(self, user):
-        user_record = self._mcache.get('uid:%s' % user)
+    def create_user(self, user, email=None, metainfo=None):
+        if email is None:
+            email = user
+        if metainfo is None:
+            metainfo = {'created': int(time.time())}
+        user_record = self._mcache.get('uid:%s' % str(user))
         if user_record is None:
             try:
                 connection = self._pool.connection()
                 db = connection.cursor()
-                db.execute("insert into %s (user) values ('%r');" % (
-                    MySQLdb.escape_string(user)))
-                self._mcache.set('uid:%s' % user, 
+                db.execute("insert into %s (user, email, " + 
+                    "metainfo) values ('%s');" % (
+                    self._utable,
+                    MySQLdb.escape_string(user),
+                    MySQLdb.escape_string(email),
+                    MySQLdb.escape_string(json.dumps(metainfo))))
+                self._mcache.set('uid:%s' % str(user), 
                         json.dumps({'created': int(time.time())}))
                 return user
             except Exception, e:

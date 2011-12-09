@@ -18,11 +18,17 @@ def main(global_config, **settings):
     config.registry['auth'] = configure_from_settings (
         'auth', settings['config'].get_map('auth'))
 
+    config.registry['dash_auth'] = configure_from_settings (
+        'dash_auth', settings['config'].get_map('dash_auth'))
+
     # Adds authorization.
     config.include("pyramid_multiauth")
 
     # Adds cornice.
     config.include("cornice")
+
+    # Adds beaker.
+    config.include("pyramid_beaker")
 
     # Adds Mozilla default views.
     config.include("mozsvc")
@@ -31,6 +37,7 @@ def main(global_config, **settings):
     config.scan("bipostaldash.views")
 
     config.add_static_view('/', 'bipostaldash:backbone/',
-                           permission='authenticated')
+            # permission="authenticated"
+            )
 
     return config.make_wsgi_app()
