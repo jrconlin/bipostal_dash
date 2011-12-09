@@ -30,7 +30,7 @@ logger = logging.getLogger(__file__)
 EMAIL_RE = '[^@]+@[^.]+.\w+'
 
 def default_domain(request):
-    return request.environ.get('HTTP_HOST')
+    return request.environ.get('HTTP_HOST', 'browserid.org')
 
 
 def make_alias(length=64, domain=None):
@@ -41,7 +41,7 @@ def make_alias(length=64, domain=None):
 
 
 @gen_alias.get()
-def new_alias(request=None, root=None, domain=None):
+def new_alias(request, root=None, domain=None):
     if domain is None:
         domain = default_domain(request)
     return make_alias(domain=domain)
@@ -49,7 +49,6 @@ def new_alias(request=None, root=None, domain=None):
 
 @aliases.get(permission='authenticated')
 def list_aliases(request):
-    import pdb; pdb.set_trace()
     db = request.registry['storage']
     auth = request.registry.get('auth', DefaultAuth)
     #email = auth.get_user_id(request)
@@ -70,7 +69,7 @@ def add_alias(request):
         except Exception:
             raise http.HTTPBadRequest()
     else:
-        alias = new_alias(domain=request.registry.settings['email_domain'])
+        alias = make_alias(domain=request.registry.settings['email_domain'])
     if not re.match(EMAIL_RE, alias) or db.resolve_alias(alias):
         raise http.HTTPBadRequest()
 
@@ -119,7 +118,6 @@ def change_alias(request):
 def login(request):
     """ Accept the browserid auth element """
     try:
-        import pdb; pdb.set_trace()
         session = request.session
         # Use a different auth mechanism for user login.
         auth = request.registry.get('dash_auth', DefaultAuth)
@@ -127,8 +125,10 @@ def login(request):
         if email is None:
             template = Template(filename = os.path.join('bipostaldash',
                 'templates', 'login.mako'))
-            response = Response(str(template.render()))
-            del(session['uid'])
+            response = Response(str(template.render()),
+                    status = 403)
+            if (session.get('uid')):
+                del(session['uid'])
             session.save()
             return response
         db = request.registry['storage']
@@ -142,6 +142,6 @@ def login(request):
     # set the beakerid
     session['uid'] = email
     session.save()
-    return response;
+    return response
 
 

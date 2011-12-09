@@ -139,7 +139,9 @@ def test_new_alias(urandom_mock):
     request.environ['HTTP_HOST'] = 'browserid.org'
     eq_(views.new_alias(request), 
             '01Z012@browserid.org')
-    eq_(views.new_alias(request, domain='woo.com'), 
+    # Cornice currently faults on passing domain.
+    request.environ['HTTP_HOST'] = 'woo.com'
+    eq_(views.new_alias(request), 
             '01Z012@woo.com')
 
 
