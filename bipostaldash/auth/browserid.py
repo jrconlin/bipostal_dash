@@ -17,6 +17,9 @@ class BrowserIDAuth(object):
             request, 
             audience=None,
             assertion=None):
+        session = request.session
+        if (session.get('uid')):
+            return session.get('uid')
         if audience is None:
             audience = self._server
         if assertion is None:
@@ -24,9 +27,6 @@ class BrowserIDAuth(object):
         if assertion is None:
             return None
         try:
-            session = request.session
-            if (session.get('uid')):
-                return session.get('uid')
             #note: this does not validate the assertion (yet).
             # Still need to pull the public key from the server
             parsed_cert = self._parse_assertion(assertion)

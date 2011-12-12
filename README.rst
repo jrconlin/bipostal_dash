@@ -16,20 +16,20 @@ Getting Started
     cd deps
     hg clone http://hg.mozilla.org/services/server-core/
     cd server-core
-3. Install bipostal 
+3. Install bipostaldash
 
    bin/python setup.py install 
 
 4. Start the server::
 
-    paster serve etc/bipostal-dev.ini
+    paster serve etc/bipostaldash-dev.ini
 
 
 Run the Server
 --------------
 ::
 
-    paster serve etc/bipostal-dev.ini
+    paster serve etc/bipostaldash-dev.ini
 
 
 The API

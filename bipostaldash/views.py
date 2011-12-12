@@ -46,22 +46,25 @@ def new_alias(request, root=None, domain=None):
         domain = default_domain(request)
     return make_alias(domain=domain)
 
-
-@aliases.get(permission='authenticated')
+@aliases.get()
 def list_aliases(request):
     db = request.registry['storage']
     auth = request.registry.get('auth', DefaultAuth)
-    #email = auth.get_user_id(request)
     email = auth.get_user_id(request)
-    aliases = db.get_aliases(email=email) or []
+    if email is None:
+        return http.HTTPForbidden()
+    aliases = db.get_aliases(user=email) or []
     return {'email': email, 'aliases': aliases}
 
 
-@aliases.post(permission='authenticated')
+@aliases.post()
 def add_alias(request):
     db = request.registry['storage']
     auth = request.registry.get('auth', DefaultAuth)
     email = auth.get_user_id(request)
+    if email is None:
+        return http.HTTPForbidden()
+    alias = ''
 
     if request.body:
         try:
@@ -73,7 +76,7 @@ def add_alias(request):
     if not re.match(EMAIL_RE, alias) or db.resolve_alias(alias):
         raise http.HTTPBadRequest()
 
-    rv = db.add_alias(email=email, alias=alias)
+    rv = db.add_alias(user=email, alias=alias)
     logger.info('New alias for %s.', email)
     return rv
 
@@ -87,7 +90,7 @@ def get_alias(request):
     return rv
 
 
-@alias_detail.delete(permission='authenticated')
+@alias_detail.delete()
 def delete_alias(request):
     """Delete an alias."""
     auth = request.registry.get('auth', DefaultAuth)
@@ -99,7 +102,7 @@ def delete_alias(request):
     return rv
 
 
-@alias_detail.post(permission='authenticated')
+@alias_detail.post()
 def change_alias(request):
     """Make a change to an existing alias."""
     try:
@@ -129,6 +132,7 @@ def login(request):
                     status = 403)
             if (session.get('uid')):
                 del(session['uid'])
+            session.persist()
             session.save()
             return response
         db = request.registry['storage']
@@ -138,7 +142,8 @@ def login(request):
         raise http.HTTPUnauthorized()
     template = Template(filename = os.path.join('bipostaldash',
             'templates', 'mainpage.mako'))
-    response = Response(str(template.render()))
+    response = Response(str(template.render(user = email,
+                    request = request)))
     # set the beakerid
     session['uid'] = email
     session.save()

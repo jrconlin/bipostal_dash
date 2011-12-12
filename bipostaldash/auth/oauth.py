@@ -81,8 +81,9 @@ class OAuth(object):
 
         # Do we have keys?
         try:
-            consumer_key = reg['config']['oauth.consumer_key']
-            consumer_secret = self._oEsc(reg['config']['oauth.consumer_secret'])
+            consumer_key = reg['config']['auth.oauth.consumer_key']
+            shared_secret = \
+                    self._oEsc(reg['config']['auth.oauth.shared_secret'])
         except KeyError, e:
             raise OAuthException('Config missing keys: "%s"' % str(e))
         # Is this an OAuth request?
@@ -103,7 +104,7 @@ class OAuth(object):
                          'oauth_version']
         for key in required_keys:
             if key not in params:
-                raise OAuthException('Request missing required OAuth values')
+                raise OAuthException('Request missing required OAuth value %s' % key)
         your_sig = urllib2.unquote(params.get('oauth_signature'))
         # Have we seen this nonce for this consumer_key before?
         if (nonces.contains(params['oauth_nonce'])):
@@ -116,12 +117,13 @@ class OAuth(object):
                 self._oEsc(path), 
                 self._oEsc(self.normalizedParams(params))))
         # and generate the sig
-        test_sig = base64.b64encode(hmac.new("%s&" % consumer_secret,
+        test_sig = base64.b64encode(hmac.new("%s&" % shared_secret,
             sbs, hashlib.sha1).digest())
         # Compare the comparison sig with the recv'd signature
         if (params.get('oauth_consumer_key') == consumer_key 
                 and test_sig == your_sig):
-            return params.get('email')
+            session = request.session
+            return session.get('uid')
         logging.error("invalid signature")
         return None
 

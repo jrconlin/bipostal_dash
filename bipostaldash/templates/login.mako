@@ -47,7 +47,7 @@
                       "<input type='hidden' name='assertion' value=' " + assertion +
                       "'/><input type='hidden' name='audience' value='bipostal.browserid.org'>" + 
                       "</form>").appendTo('#browserid');
-                  $form.submit();
+                  form.submit();
               })
           });
           $('#signin').attr('src', "https://browserid.org/i/sign_in_blue.png");

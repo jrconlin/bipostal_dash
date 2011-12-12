@@ -1,9 +1,15 @@
 <!DOCTYPE html>
+<%
+    user = pageargs.get('user', 'User')
+    request = pageargs.get('request', {'registry': {}})
+    consumer_key = request.registry.get('config', {}).get('auth.oauth.consumer_key', '')
+    shared_secret = request.registry.get('config', {}).get('auth.oauth.shared_secret', '')
+
+%>
 <html>
   <head>
     <meta charset="utf-8">
     <title>Manage your BrowserID aliases</title>
-    <script src="jquery-underscore-backbone.js"></script>
     <style>
       body {
         color: #333;
@@ -39,13 +45,16 @@
   <body>
     <hgroup>
       <h1>Manage your BrowserID Aliases</h1>
-      <h2>Primary Address: <span id="email"></span></h2>
+      <h2>Primary Address: <span id="email">${user}</span></h2>
     </hgroup>
     <button id="new">Get a new alias.</button>
     <ul id="aliases">
     </ul>
+    <script src="jquery-underscore-backbone.js"></script>
+    <script src="/OAuthSimple.js" type="text/javascript"></script>
     <script>
-      "use strict";
+        "use strict";
+
       var Alias = Backbone.Model.extend({
         initialize: function(attributes) {
           this.id = attributes.alias;
@@ -53,13 +62,28 @@
       });
 
       var Aliases = Backbone.Collection.extend({
-        model: Alias,
+          model: Alias,
 
-        url: '/alias/',
+          sign: function(url, params, method) {
+                method = typeof(method) != 'undefined' ? method : 'GET';
+                var oauth = OAuthSimple('${consumer_key}', '${shared_secret}');
+                var signed = oauth.sign({action: method, path: url, params: params});
+                return signed.signed_url;
+          },
 
-        parse: function(response) {
-          this.email = response.email;
-          return response.aliases;
+          url: function(nosign, params) {
+            var url = '/alias/';
+            if (nosign) {
+                return url;
+            } else {
+                console.debug(this);
+                return this.sign(url, params)
+            }
+         },
+
+         parse: function(response) {
+           this.email = response.email;
+           return response.aliases;
         }
       });
 
@@ -115,9 +139,11 @@
         },
 
         newAlias: function() {
-          var self = this;
-          $.post(this.aliases.url, function(response) {
-            self.aliases.add(response);
+            var self = this;
+            var signed = self.aliases.sign(this.aliases.url(1), 'user=${user}', 'POST')
+            console.debug('Sending '+signed); 
+            $.post(signed, function(response) {
+                self.aliases.add(response);
           });
         }
       });
