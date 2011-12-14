@@ -28,8 +28,10 @@ class OAuthTest(unittest2.TestCase):
                 'oauth_signature_method': 'HMAC-SHA1',
                 'oauth_version': '1.0'}
         request.registry['config'] = {
-                'oauth.consumer_key': '123',
-                'oauth.consumer_secret': 'abc'}
+                'auth.oauth.consumer_key': '123',
+                'auth.oauth.shared_secret': 'abc'}
+        request.session = \
+            {'uid': request.params['email']}
         authElem = []
         for key in request.registry['oauth_params']:
             authElem.append('%s="%s"' % (key, 

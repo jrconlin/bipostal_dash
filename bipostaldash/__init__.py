@@ -3,7 +3,7 @@ from pyramid.config import Configurator
 from mozsvc.config import load_into_settings
 
 from bipostaldash.resources import Root
-from bipostaldash.storage import configure_from_settings
+from bipostal.storage import configure_from_settings
 
 
 def main(global_config, **settings):

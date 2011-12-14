@@ -8,6 +8,7 @@ mock == 0.7.2
 # mysql-server
 # mysql-client
 # libmysqlclient-dev
+-e git://github.com/jrconlin/bipostal_store#egg=bipostal_storage
 -e git://github.com/mozilla-services/mozservices.git#egg=mozsvc
 -e git://github.com/mozilla-services/pyramid_whoauth.git#egg=pyramid_whoauth
 -e git://github.com/mozilla-services/cornice.git#egg=cornice

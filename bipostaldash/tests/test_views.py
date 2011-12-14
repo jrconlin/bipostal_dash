@@ -8,7 +8,7 @@ from pyramid import testing
 from pyramid import httpexceptions as http
 from nose.tools import eq_
 
-from bipostaldash.storage import mem
+from bipostal.storage import mem
 from bipostaldash import views
 from bipostaldash.auth.default import DefaultAuth
 import bipostaldash

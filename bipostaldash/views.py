@@ -97,7 +97,7 @@ def delete_alias(request):
     email = auth.get_user_id(request)
     db = request.registry['storage']
     alias = request.matchdict['alias']
-    rv = db.delete_alias(email=email, alias=alias)
+    rv = db.delete_alias(user=email, alias=alias)
     logger.info('Deleting alias for %s.', email)
     return rv
 
@@ -113,7 +113,7 @@ def change_alias(request):
     email = auth.get_user_id(request)
     db = request.registry['storage']
     alias = request.matchdict['alias']
-    rv = db.add_alias(email=email, alias=alias, status=active)
+    rv = db.add_alias(user=email, alias=alias, status=active)
     return rv
 
 @login_service.get()

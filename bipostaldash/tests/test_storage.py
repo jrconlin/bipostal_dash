@@ -2,7 +2,7 @@ import unittest2
 
 from nose.tools import eq_
 
-from bipostaldash.storage import configure_from_settings
+from bipostal.storage import configure_from_settings
 
 
 class StorageTest(unittest2.TestCase):
@@ -89,18 +89,17 @@ class MemStorageTest(StorageTest):
     __test__ = True
 
     def setUp(self):
-        settings = {'backend': 'bipostaldash.storage.mem.Storage'}
+        settings = {'backend': 'bipostal.storage.mem.Storage'}
         self.storage = configure_from_settings('storage', settings)
 
 
-""""
 class RedisStorageTest(StorageTest):
     __test__ = True
 
     def setUp(self):
         # Use a separate db for testing.
 
-        settings = {'backend': 'bipostaldash.storage.redis_.Storage',
+        settings = {'backend': 'bipostal.storage.redis_.Storage',
                     'db': 1,
                     'host': 'localhost',
                     'port': 6379,
@@ -108,13 +107,12 @@ class RedisStorageTest(StorageTest):
         self.storage = configure_from_settings('storage', settings)
         # Clear out the db for testing.
         self.storage.redis.flushall()
-"""
 
 class MysqlMemcacheTest(StorageTest):
     __test__ = True
 
     def setUp(self):
-        settings = {'backend': 'bipostaldash.storage.mysql_memcache.Storage',
+        settings = {'backend': 'bipostal.storage.mysql_memcache.Storage',
                     'mysql.user': 'rw',
                     'mysql.password': 'rw',
                     'mysql.host': 'localhost',

@@ -6,7 +6,7 @@ from pyramid import testing
 #from pyramid import httpexceptions as httpx
 from nose.tools import eq_
 
-from bipostaldash.storage import mem
+from bipostal.storage import mem
 from bipostaldash.auth.browserid import BrowserIDAuth
 
 class BrowerIDTest(unittest2.TestCase):
