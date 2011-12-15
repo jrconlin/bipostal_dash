@@ -1,5 +1,6 @@
 from services import logger
 from base64 import urlsafe_b64decode
+import urllib2
 import json
 
 
@@ -29,6 +30,7 @@ class BrowserIDAuth(object):
         try:
             #note: this does not validate the assertion (yet).
             # Still need to pull the public key from the server
+            assertion = str(urllib2.unquote(assertion)).strip()
             parsed_cert = self._parse_assertion(assertion)
             return parsed_cert['certificates'][0]\
                     ['payload']['principal']['email']
@@ -38,6 +40,7 @@ class BrowserIDAuth(object):
 
     def _decode(self, dstr):
         try:
+            import pdb; pdb.set_trace();
             return urlsafe_b64decode(self._check_b64pad(str(dstr)))
         except TypeError, e:
             logger.error("Decode Error %s [%s]" % (dstr, str(e)))
