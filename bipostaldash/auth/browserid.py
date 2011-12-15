@@ -41,7 +41,6 @@ class BrowserIDAuth(object):
 
     def _decode(self, dstr):
         try:
-            import pdb; pdb.set_trace();
             return urlsafe_b64decode(self._check_b64pad(str(dstr)))
         except TypeError, e:
             logger.error("Decode Error %s [%s]" % (dstr, str(e)))
