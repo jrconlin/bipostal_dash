@@ -46,7 +46,6 @@ class BrowserIDAuth(object):
             logger.error("Decode Error %s [%s]" % (dstr, str(e)))
 
     def _check_b64pad(self, string):
-        import pdb; pdb.set_trace()
         pad_size = 4 - (len(string) % 4)
         return string + ('=' * pad_size)
 

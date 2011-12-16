@@ -55,14 +55,33 @@
     <script>
         "use strict";
 
+        Backbone.old_sync = Backbone.sync;
+
+        
+        Backbone.sync = function(method, model, options) {
+            var methods = {'create': 'POST',
+                        'read': 'GET',
+                        'update': 'PUT',
+                        'delete': 'DELETE'};
+
+            var oauth = OAuthSimple('${consumer_key}', '${shared_secret}');
+            var signed = oauth.sign({action: methods[method], 
+                path: model.url(),
+                params: ""});
+            model.url_override = signed.signed_url;
+            console.debug("Sync ", method, model, options);
+            return Backbone.old_sync(method, model, options);
+      };
+
       var Alias = Backbone.Model.extend({
-        initialize: function(attributes) {
+          initialize: function(attributes) {
           this.id = attributes.alias;
         },
       });
 
       var Aliases = Backbone.Collection.extend({
           model: Alias,
+          url_override: "",
 
           sign: function(url, params, method) {
                 method = typeof(method) != 'undefined' ? method : 'GET';
@@ -71,14 +90,11 @@
                 return signed.signed_url;
           },
 
-          url: function(nosign, params) {
-            var url = '/alias/';
-            if (nosign) {
-                return url;
-            } else {
-                console.debug(this);
-                return this.sign(url, params)
-            }
+          url: function() {
+              if (this.url_override) {
+                  return this.url_override;
+              }
+            return '/alias/';
          },
 
          parse: function(response) {
@@ -94,8 +110,10 @@
           'click .delete': 'destroy'
         },
 
-        destroy: function() {
-          $(this.el).remove();
+        destroy: function(o) {
+            $(this.el).remove();
+            console.debug(o);
+            console.debug(this);
           this.model.destroy();
           return false;
         },
@@ -136,7 +154,7 @@
 
         events: {
           'click #new': 'newAlias'
-        },
+      },
 
         newAlias: function() {
             var self = this;
