@@ -2,8 +2,8 @@ create database if not exists bipostal;
 use bipostal;
 
 create table if not exists `alias` (
-  `alias` varchar(250) NOT NULL,
-  `user` varchar(65) NOT NULL,
+  `alias` varchar(255) NOT NULL,
+  `user` varchar(255) NOT NULL,
   `origin` varchar(190) NOT NULL,
   `created` bigint(20) NOT NULL,
   `status` enum('active','inactive','deleted') DEFAULT 'active',
@@ -14,7 +14,7 @@ create table if not exists `alias` (
 ) ENGINE=MyISAM;
 
 create table if not exists `user` (
-  `user` varchar(65) NOT NULL,
+  `user` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
   `metainfo` text NOT NULL,
   PRIMARY KEY (`user`)
