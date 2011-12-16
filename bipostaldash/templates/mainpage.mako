@@ -46,8 +46,10 @@
     <hgroup>
       <h1>Manage your BrowserID Aliases</h1>
       <h2>Primary Address: <span id="email">${user}</span></h2>
-    </hgroup>
-    <button id="new">Get a new alias.</button>
+      </hgroup>
+      <label for="audience">Audience:</label>
+      <input name="audience" id="audience" value="example.com">
+      <button id="new">Get a new alias.</button>
     <ul id="aliases">
     </ul>
     <script src="jquery-underscore-backbone.js"></script>
@@ -57,22 +59,27 @@
 
         Backbone.old_sync = Backbone.sync;
 
-        
-        Backbone.sync = function(method, model, options) {
-            var methods = {'create': 'POST',
-                        'read': 'GET',
-                        'update': 'PUT',
-                        'delete': 'DELETE'};
-
+        jQuery.ajaxPrefilter( function (options, originalOptions, jqXHR){
+            console.debug(options, originalOptions, jqXHR);
             var oauth = OAuthSimple('${consumer_key}', '${shared_secret}');
-            var signed = oauth.sign({action: methods[method], 
-                path: model.url(),
-                params: ""});
-            model.url_override = signed.signed_url;
-            console.debug("Sync ", method, model, options);
-            return Backbone.old_sync(method, model, options);
-      };
-
+            var elem = options.url.split('?')
+            var path = elem[0];
+            var params = elem[1]?elem[1]:'';
+            /*            
+            if (options.data) {
+                if (params.length) { 
+                    params += '&';
+                }
+                params += options.data;
+            }
+            */            
+            // Unescaping path because jquery already escaped it.
+            var signed = oauth.sign({action: options.type,
+                path: unescape(path),
+                parameters: unescape(params)});
+            options.url = signed.signed_url;
+            }
+        );
       var Alias = Backbone.Model.extend({
           initialize: function(attributes) {
           this.id = attributes.alias;
@@ -81,26 +88,12 @@
 
       var Aliases = Backbone.Collection.extend({
           model: Alias,
-          url_override: "",
 
-          sign: function(url, params, method) {
-                method = typeof(method) != 'undefined' ? method : 'GET';
-                var oauth = OAuthSimple('${consumer_key}', '${shared_secret}');
-                var signed = oauth.sign({action: method, path: url, params: params});
-                return signed.signed_url;
-          },
-
-          url: function() {
-              if (this.url_override) {
-                  return this.url_override;
-              }
-            return '/alias/';
-         },
-
-         parse: function(response) {
-           this.email = response.email;
-           return response.aliases;
-        }
+          url: '/alias/',
+          parse: function(response) {
+             this.email = response.email;
+             return response.aliases;
+          }
       });
 
       var AliasView = Backbone.View.extend({
@@ -154,15 +147,16 @@
 
         events: {
           'click #new': 'newAlias'
-      },
+        },
 
         newAlias: function() {
             var self = this;
-            var signed = self.aliases.sign(this.aliases.url(1), 'user=${user}', 'POST')
-            console.debug('Sending '+signed); 
-            $.post(signed, function(response) {
+            var audience = $('#audience')[0].value;
+            $.post(this.aliases.url, 
+            '{"audience": "' + audience + '"}',
+            function(response) {
                 self.aliases.add(response);
-          });
+            });
         }
       });
       window.App = new AppView;

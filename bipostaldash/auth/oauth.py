@@ -77,7 +77,8 @@ class OAuth(object):
 
     def get_user_id(self, request):
         reg = request.registry
-        params = request.params
+        # Only use GET Params for OAuth.
+        params = request.GET
 
         # Do we have keys?
         try:

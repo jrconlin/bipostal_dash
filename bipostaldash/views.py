@@ -64,19 +64,21 @@ def add_alias(request):
     email = auth.get_user_id(request)
     if email is None:
         return http.HTTPForbidden()
-    alias = ''
+    audience = request.registry.settings['email_domain']
+    alias = make_alias(domain=audience);
 
     if request.body:
         try:
-            alias = request.json_body['alias']
+            alias = request.json_body.get('alias', None)
+            audience = request.json_body.get('audience', None)
+            if alias is None and audience is not None:
+                alias = make_alias(domain=audience)
         except Exception:
             raise http.HTTPBadRequest()
-    else:
-        alias = make_alias(domain=request.registry.settings['email_domain'])
     if not re.match(EMAIL_RE, alias) or db.resolve_alias(alias):
         raise http.HTTPBadRequest()
 
-    rv = db.add_alias(user=email, alias=alias)
+    rv = db.add_alias(user=email, alias=alias, origin=audience)
     logger.info('New alias for %s.', email)
     return rv
 
