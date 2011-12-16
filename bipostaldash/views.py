@@ -8,6 +8,7 @@ from pyramid.response import Response
 from bipostaldash.auth.default import DefaultAuth
 from mako.template import Template
 
+
 from cornice import Service
 
 # Cornice currently renders JSON only. So only REST functions use it.
@@ -50,20 +51,26 @@ def new_alias(request, root=None, domain=None):
 def list_aliases(request):
     db = request.registry['storage']
     auth = request.registry.get('auth', DefaultAuth)
-    email = auth.get_user_id(request)
-    if email is None:
+    try:
+        email = auth.get_user_id(request)
+        if email is None:
+            raise http.HTTPUnauthorized()
+        aliases = db.get_aliases(user=email) or []
+        return {'email': email, 'aliases': aliases}
+    except Exception, e:
         return http.HTTPForbidden()
-    aliases = db.get_aliases(user=email) or []
-    return {'email': email, 'aliases': aliases}
 
 
 @aliases.post()
 def add_alias(request):
     db = request.registry['storage']
     auth = request.registry.get('auth', DefaultAuth)
-    email = auth.get_user_id(request)
+    try:
+        email = auth.get_user_id(request)
+    except Exception, e:
+        raise http.HTTPUnauthorized()
     if email is None:
-        return http.HTTPForbidden()
+        raise http.HTTPUnauthorized()
     alias = ''
 
     if request.body:
@@ -94,7 +101,10 @@ def get_alias(request):
 def delete_alias(request):
     """Delete an alias."""
     auth = request.registry.get('auth', DefaultAuth)
-    email = auth.get_user_id(request)
+    try:
+        email = auth.get_user_id(request)
+    except Exception:
+        raise http.HTTPUnauthorized()
     db = request.registry['storage']
     alias = request.matchdict['alias']
     rv = db.delete_alias(user=email, alias=alias)
@@ -110,7 +120,10 @@ def change_alias(request):
     except Exception:
         raise http.HTTPBadRequest()
     auth = request.registry.get('auth', DefaultAuth)
-    email = auth.get_user_id(request)
+    try:
+        email = auth.get_user_id(request)
+    except Exception:
+        return http.HTTPForbidden()
     db = request.registry['storage']
     alias = request.matchdict['alias']
     rv = db.add_alias(user=email, alias=alias, status=active)

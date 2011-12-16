@@ -95,8 +95,9 @@
         },
 
         destroy: function() {
+            this.model.destroy();
+            
           $(this.el).remove();
-          this.model.destroy();
           return false;
         },
 
@@ -136,6 +137,10 @@
 
         events: {
           'click #new': 'newAlias'
+      },
+        
+        destroy: function() {
+            return True;
         },
 
         newAlias: function() {
