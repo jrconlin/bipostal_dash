@@ -37,6 +37,7 @@ def make_alias(length=64, domain=None):
     chars = string.digits + string.letters
     base = len(chars)
     token = ''.join(chars[ord(x) % base] for x in os.urandom(length))
+    token = token.lower()
     return '%s@%s' % (token, domain)
 
 

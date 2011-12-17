@@ -48,7 +48,7 @@
       <h2>Primary Address: <span id="email">${user}</span></h2>
       </hgroup>
       <label for="audience">Audience:</label>
-      <input name="audience" id="audience" value="example.com">
+      <input name="audience" id="audience" value="bipostal.diresworb.org">
       <button id="new">Get a new alias.</button>
     <ul id="aliases">
     </ul>
