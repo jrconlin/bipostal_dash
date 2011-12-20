@@ -79,13 +79,8 @@ class OAuth(object):
         reg = request.registry
         params = request.params
 
-        # Do we have keys?
-        try:
-            consumer_key = reg['config']['auth.oauth.consumer_key']
-            shared_secret = \
-                    self._oEsc(reg['config']['auth.oauth.shared_secret'])
-        except KeyError, e:
-            raise OAuthException('Config missing keys: "%s"' % str(e))
+        key_store = reg.get('key_store')
+
         # Is this an OAuth request?
         if 'Authorization' in request.headers:
             auth_header = request.headers.get("Authorization")
@@ -95,6 +90,13 @@ class OAuth(object):
             for match in grp.finditer(auth_header):
                 group = match.groups()
                 params[group[0]] = group[1]
+        # Do we have keys?
+        consumer_key = params.get('oauth_consumer_key')
+        if not consumer_key:
+            raise OAuthException('missing Consumer Key')
+        shared_secret = key_store.get(consumer_key);
+        if not shared_secret:
+            raise OAuthException('invalid Shared Secret')
         # Do we have the required OAuth values?
         required_keys = ['oauth_nonce',
                          'oauth_timestamp',

@@ -6,6 +6,7 @@ import string
 from pyramid import httpexceptions as http
 from pyramid.response import Response
 from bipostaldash.auth.default import DefaultAuth
+from bipostaldash.auth.default import DefaultKeyStore
 from mako.template import Template
 
 
@@ -26,6 +27,8 @@ login_service  = Service(name='login', path='/',
 
 
 logger = logging.getLogger(__file__)
+
+
 
 # Not the best; just make sure it looks like x@y.z.
 EMAIL_RE = '[^@]+@[^.]+.\w+'
@@ -129,6 +132,16 @@ def change_alias(request):
     rv = db.add_alias(user=email, alias=alias, status=active)
     return rv
 
+def _gen_keys(config):
+    """ Generate and register the oauth keys for this user """
+    # build the keys from the token generator
+    result = {
+            'consumer_key': make_alias().split('@')[0],
+            'shared_secret': make_alias().split('@')[0]
+            }
+    #stuff them into redis for lookup and auth.
+    return result
+
 @login_service.get()
 @login_service.post()
 def login(request):
@@ -137,6 +150,7 @@ def login(request):
         session = request.session
         # Use a different auth mechanism for user login.
         auth = request.registry.get('dash_auth', DefaultAuth)
+        key_store = request.registry.get('key_store', DefaultKeyStore)
         email = auth.get_user_id(request)
         if email is None:
             template = Template(filename = os.path.join('bipostaldash',
@@ -153,10 +167,22 @@ def login(request):
     except Exception, e:
         logging.info('Invalid or missing credentials [%s]' % repr(e))
         raise http.HTTPUnauthorized()
-    template = Template(filename = os.path.join('bipostaldash',
-            'templates', 'mainpage.mako'))
-    response = Response(str(template.render(user = email,
+    keys = _gen_keys(config=request.registry.get('config'))
+    logger.info('logging user in, creating keys. %s : %s' % 
+            (keys['consumer_key'], keys['shared_secret']))
+    key_store.add(keys['consumer_key'], keys['shared_secret'])
+    if 'javascript' in request.response.content_type:
+        response = {'consumer_key': 
+                    keys.get('consumer_key'),
+                    'shared_secret': 
+                    keys.get('shared_secret')}
+    else:
+        template = Template(filename = os.path.join('bipostaldash',
+                'templates', 'mainpage.mako'))
+        response = Response(str(template.render(user = email,
+                    keys = keys,
                     request = request)))
+
     # set the beakerid
     session['uid'] = email
     session.save()

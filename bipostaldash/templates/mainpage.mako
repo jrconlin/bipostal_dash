@@ -2,8 +2,11 @@
 <%
     user = pageargs.get('user', 'User')
     request = pageargs.get('request', {'registry': {}})
-    consumer_key = request.registry.get('config', {}).get('auth.oauth.consumer_key', '')
-    shared_secret = request.registry.get('config', {}).get('auth.oauth.shared_secret', '')
+    keys = pageargs.get('keys', {
+        'consumer_key': request.registry.get('config', 
+            {}).get('auth.oauth.consumer_key', ''),
+        'shared_secret': request.registry.get('config', 
+            {}).get('auth.oauth.shared_secret', '')})
 
 %>
 <html>
@@ -66,7 +69,8 @@
 
           sign: function(url, params, method) {
                 method = typeof(method) != 'undefined' ? method : 'GET';
-                var oauth = OAuthSimple('${consumer_key}', '${shared_secret}');
+                var oauth = OAuthSimple('${keys.get('consumer_key')}', 
+                    '${keys.get('shared_secret')}');
                 var signed = oauth.sign({action: method, path: url, params: params});
                 return signed.signed_url;
           },
