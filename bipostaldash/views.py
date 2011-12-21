@@ -41,6 +41,7 @@ def make_alias(length=64, domain=None):
     chars = string.digits + string.letters
     base = len(chars)
     token = ''.join(chars[ord(x) % base] for x in os.urandom(length))
+    token = token.lower()
     return '%s@%s' % (token, domain)
 
 
@@ -57,10 +58,12 @@ def list_aliases(request):
     try:
         email = auth.get_user_id(request)
         if email is None:
+            logger.error('No email found for list request.')
             raise http.HTTPUnauthorized()
         aliases = db.get_aliases(user=email) or []
         return {'email': email, 'aliases': aliases}
     except Exception, e:
+        logger.error(repr(e))
         return http.HTTPForbidden()
 
 
@@ -71,22 +74,26 @@ def add_alias(request):
     try:
         email = auth.get_user_id(request)
     except Exception, e:
+        logger.error(repr(e))
         raise http.HTTPUnauthorized()
     if email is None:
+        logger.error('No email found for add alias')
         raise http.HTTPUnauthorized()
     alias = ''
 
     if request.body:
         try:
-            alias = request.json_body['alias']
-        except Exception:
+            alias = request.json_body.get('alias', None)
+            audience = request.json_body.get('audience', None)
+            if alias is None and audience is not None:
+                alias = make_alias(domain=audience)
+        except Exception, e:
+            logging.error(repr(e))
             raise http.HTTPBadRequest()
-    else:
-        alias = make_alias(domain=request.registry.settings['email_domain'])
     if not re.match(EMAIL_RE, alias) or db.resolve_alias(alias):
         raise http.HTTPBadRequest()
 
-    rv = db.add_alias(user=email, alias=alias)
+    rv = db.add_alias(user=email, alias=alias, origin=audience)
     logger.info('New alias for %s.', email)
     return rv
 
@@ -106,7 +113,8 @@ def delete_alias(request):
     auth = request.registry.get('auth', DefaultAuth)
     try:
         email = auth.get_user_id(request)
-    except Exception:
+    except Exception, e:
+        logging.error(repr(e))
         raise http.HTTPUnauthorized()
     db = request.registry['storage']
     alias = request.matchdict['alias']
@@ -120,12 +128,14 @@ def change_alias(request):
     """Make a change to an existing alias."""
     try:
         active = request.json_body['status']
-    except Exception:
+    except Exception, e:
+        logging.error(repr(e))
         raise http.HTTPBadRequest()
     auth = request.registry.get('auth', DefaultAuth)
     try:
         email = auth.get_user_id(request)
-    except Exception:
+    except Exception, e:
+        logging.error(repr(e))
         return http.HTTPForbidden()
     db = request.registry['storage']
     alias = request.matchdict['alias']
@@ -149,9 +159,10 @@ def login(request):
     try:
         session = request.session
         # Use a different auth mechanism for user login.
-        auth = request.registry.get('dash_auth', DefaultAuth)
-        key_store = request.registry.get('key_store', DefaultKeyStore)
+        auth = request.registry.get('dash_auth', DefaultAuth())
+        key_store = request.registry.get('key_store', DefaultKeyStore())
         email = auth.get_user_id(request)
+        keys = key_store.get_keys(request)
         if email is None:
             template = Template(filename = os.path.join('bipostaldash',
                 'templates', 'login.mako'))
@@ -167,10 +178,12 @@ def login(request):
     except Exception, e:
         logging.info('Invalid or missing credentials [%s]' % repr(e))
         raise http.HTTPUnauthorized()
-    keys = _gen_keys(config=request.registry.get('config'))
-    logger.info('logging user in, creating keys. %s : %s' % 
+    if session.get('keys') is None:
+        keys = _gen_keys(config=request.registry.get('config'))
+        logger.info('logging user in, creating keys. %s : %s' % 
             (keys['consumer_key'], keys['shared_secret']))
-    key_store.add(keys['consumer_key'], keys['shared_secret'])
+        key_store.add(keys['consumer_key'], keys['shared_secret'])
+        session['keys'] = keys;
     if 'javascript' in request.response.content_type:
         response = {'consumer_key': 
                     keys.get('consumer_key'),

@@ -27,3 +27,6 @@ class DefaultKeyStore(object):
     def get(self, key):
         return self.store.get(key)
 
+    def get_keys(self, request):
+        return request.session.get('keys', None)
+

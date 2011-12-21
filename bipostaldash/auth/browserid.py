@@ -2,6 +2,7 @@ from services import logger
 from base64 import urlsafe_b64decode
 import urllib2
 import json
+import urllib2
 
 
 class BrowserIDAuth(object):

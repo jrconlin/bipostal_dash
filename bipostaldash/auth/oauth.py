@@ -76,10 +76,9 @@ class OAuth(object):
 
 
     def get_user_id(self, request):
-        reg = request.registry
-        params = request.params
-
-        key_store = reg.get('key_store')
+        # Only use GET Params for OAuth.
+        params = request.GET
+        session = request.session
 
         # Is this an OAuth request?
         if 'Authorization' in request.headers:
@@ -91,12 +90,17 @@ class OAuth(object):
                 group = match.groups()
                 params[group[0]] = group[1]
         # Do we have keys?
+        keys = session.get('keys',{})
         consumer_key = params.get('oauth_consumer_key')
+        if consumer_key != keys.get('consumer_key'):
+            logging.error('No consumer key found')
+            raise OAuthException('invalid consumer key')
         if not consumer_key:
             raise OAuthException('missing Consumer Key')
-        shared_secret = key_store.get(consumer_key);
+        shared_secret = keys.get('shared_secret')
         if not shared_secret:
-            raise OAuthException('invalid Shared Secret')
+            logging.error('Missing shared secret')
+            raise OAuthException('missing Shared Secret')
         # Do we have the required OAuth values?
         required_keys = ['oauth_nonce',
                          'oauth_timestamp',

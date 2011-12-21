@@ -43,7 +43,7 @@
           $(function() {
           $('#signin').click(function(){
               navigator.id.getVerifiedEmail(function(assertion) {
-                  var form = $("<form method='GET' action='/' >" +
+                  var form = $("<form method='POST' action='/' >" +
                       "<input type='hidden' name='assertion' value='" + assertion +
                       "'/><input type='hidden' name='audience' value='bipostal.browserid.org'>" + 
                       "</form>").appendTo('#browserid');

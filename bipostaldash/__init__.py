@@ -15,7 +15,6 @@ def main(global_config, **settings):
     config.registry['storage'] = configure_from_settings(
         'storage', settings['config'].get_map('storage'))
 
-    import pdb; pdb.set_trace()
     config.registry['key_store'] = configure_from_settings(
         'key_store', settings['config'].get_map('key_store'))
 
