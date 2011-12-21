@@ -4,6 +4,7 @@ WebTest
 pyramid_beaker
 redis == 2.4.10
 mock == 0.7.2
+pycurl
 # memcached
 # mysql-server
 # mysql-client
