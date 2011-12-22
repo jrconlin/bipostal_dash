@@ -38,7 +38,7 @@ def default_domain(request):
 
 
 def make_alias(length=64, domain=None):
-    chars = string.digits + string.letters
+    chars = string.digits + string.lowercase
     base = len(chars)
     token = ''.join(chars[ord(x) % base] for x in os.urandom(length))
     token = token.lower()
@@ -85,9 +85,13 @@ def add_alias(request):
         try:
             alias = request.json_body.get('alias', None)
             audience = request.json_body.get('audience', None)
+            if alias is None:
+                alias = new_alias(request, domain=audience)
+            if audience is None and '@' in alias:
+                (token, audience) = alias.split('@')
             if alias is None and audience is not None:
                 alias = make_alias(domain=audience)
-        except Exception, e:
+        except Exception, e: 
             logging.error(repr(e))
             raise http.HTTPBadRequest()
     if not re.match(EMAIL_RE, alias) or db.resolve_alias(alias):
@@ -103,7 +107,10 @@ def get_alias(request):
     """Get the real address for a given alias."""
     db = request.registry['storage']
     alias = request.matchdict['alias']
-    rv = db.resolve_alias(alias=alias)
+    audience = request.matchdict.get('audience')
+    if audience is None and '@' in alias:
+        (token, audience) = alias.split('@')
+    rv = db.resolve_alias(alias=alias, origin=audience)
     return rv
 
 
@@ -118,7 +125,8 @@ def delete_alias(request):
         raise http.HTTPUnauthorized()
     db = request.registry['storage']
     alias = request.matchdict['alias']
-    rv = db.delete_alias(user=email, alias=alias)
+    audience = request.matchdict['audience']
+    rv = db.delete_alias(user=email, alias=alias, origin=audience)
     logger.info('Deleting alias for %s.', email)
     return rv
 

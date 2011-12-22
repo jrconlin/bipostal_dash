@@ -16,6 +16,7 @@ class BrowerIDTest(unittest2.TestCase):
         path = os.path.join('bipostaldash', 'tests', 'assert.txt')
         self.assertion = open(path).read().strip()
         self.auth = BrowserIDAuth(auth_server='browserid.org')
+        
 
     def tearDown(self):
         testing.tearDown()
@@ -24,6 +25,9 @@ class BrowerIDTest(unittest2.TestCase):
         request = testing.DummyRequest()
         request.params['assertion'] = self.assertion
         request.registry['storage'] = mem.Storage()
+        request.registry['config'] = {
+                'auth.local_auth': True
+                }
         response = self.auth.get_user_id(request)
         eq_(response, 'test@unitedheroes.net')
 

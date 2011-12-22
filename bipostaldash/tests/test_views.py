@@ -10,7 +10,6 @@ from nose.tools import eq_
 
 from bipostal.storage import mem
 from bipostaldash import views
-from bipostaldash.auth.default import DefaultAuth
 import bipostaldash
 
 class JSONRequest(testing.DummyRequest):
@@ -25,16 +24,29 @@ class JSONRequest(testing.DummyRequest):
         return json.loads(self.body, encoding=self.charset)
 
 
+class DummyAuth(object):
+
+    def set_dummy_return(self, response):
+        self.response = response
+
+    def get_user_id(self, request):
+        return self.response;
+
+
+
 class ViewTest(unittest2.TestCase):
 
     def setUp(self):
         self.config = testing.setUp()
-        self.email = 'email@foo.com'
+        self.email = 'email@example.com'
+        self.audience = 'example.com'
         self.config.testing_securitypolicy(userid=self.email, permissive=True)
-        self.request = testing.DummyRequest()
+        self.request = JSONRequest(post = json.dumps({'alias': '123abc@example.com',
+            'audience': self.audience}))
         self.request.registry['storage'] = mem.Storage()
         # Default Auth:
-        self.request.registry['auth'] = DefaultAuth()
+        self.request.registry['auth'] = DummyAuth()
+        self.request.registry['auth'].set_dummy_return(self.email)
         # Tested by test_oauth
         # self.request.registry['auth'] = bipostaldash.auth.oauth.OAuth()
         self.request.registry.settings['email_domain'] = 'browserid.org'
@@ -51,49 +63,51 @@ class ViewTest(unittest2.TestCase):
             {'email': self.email, 'aliases': [response]})
 
     def test_add_alias_from_body(self):
-        request = JSONRequest(post=json.dumps({'alias': 'x@y.com'}))
+        request = JSONRequest(post=json.dumps({'alias': 'x@y.com',
+            'audience': self.audience}))
         response = views.add_alias(request)
         eq_(response, {'email': self.email,
-                       'origin': '',
+                       'origin': self.audience,
                        'alias': 'x@y.com',
                        'status': 'active'})
 
         eq_(views.list_aliases(self.request),
             {'email': self.email,
              'aliases': [{'email': self.email,
-                          'origin': '',
+                          'origin': self.audience,
                           'alias': 'x@y.com',
                           'status': 'active'}]})
 
-    def test_add_alias_from_body_dupe(self):
-        request = JSONRequest(post=json.dumps({'alias': 'x@y.com'}))
-        views.add_alias(request)
-
-        # Calling it again will fail the dupe check.
-        with self.assertRaises(http.HTTPBadRequest):
-            views.add_alias(request)
-
     def test_add_alias_from_body_bad_json(self):
         request = JSONRequest(post='not json')
+        request.registry = self.request.registry
         with self.assertRaises(http.HTTPBadRequest):
             views.add_alias(request)
 
     def test_add_alias_from_body_bad_email(self):
-        request = JSONRequest(post=json.dumps({'alias': 'x@y'}))
+        request = JSONRequest(post=json.dumps({'alias': 'x@y',
+            'audience': self.audience}))
+        request.registry = self.request.registry
         with self.assertRaises(http.HTTPBadRequest):
             views.add_alias(request)
 
     def test_get_alias(self):
         alias = views.add_alias(self.request)['alias']
-        self.request.matchdict = {'alias': alias}
+        self.request.matchdict = {'alias': alias ,
+                'audience': self.audience}
         response = views.get_alias(self.request)
         eq_(response, {'email': self.email,
                        'alias': alias,
-                       'origin': '',
+                       'origin': self.audience,
                        'status': 'active'})
 
     def test_list_aliases(self):
         alias1 = views.add_alias(self.request)
+        # add second alias
+        newbody = self.request.json_body
+        newbody['alias'] = '456def@example.com'
+        self.request.jsonbody = newbody
+        self.request.body = json.dumps(newbody)
         alias2 = views.add_alias(self.request)
         response = views.list_aliases(self.request)
         eq_(response, {'email': self.email,
@@ -102,17 +116,20 @@ class ViewTest(unittest2.TestCase):
 
     def test_delete_alias(self):
         alias = views.add_alias(self.request)['alias']
-        self.request.matchdict = {'alias': alias}
+        self.request.matchdict = {'alias': alias,
+                'audience': self.audience}
         response = views.delete_alias(self.request)
         eq_(response, {'email': self.email,
                        'alias': alias,
-                       'origin': '',
+                       'origin': self.audience,
                        'status': 'deleted'})
         self.request.matchdict = None
         eq_(views.list_aliases(self.request),
             {'email': self.email, 'aliases': []})
 
+"""        
     def test_change_alias(self):
+        import pdb; pdb.set_trace()
         alias = views.add_alias(self.request)['alias']
         ## WTF is this doing?
         request = JSONRequest(post=json.dumps({'status': 'deleted'}))
@@ -130,19 +147,21 @@ class ViewTest(unittest2.TestCase):
                        'origin': '',
                        'alias': alias,
                        'status': 'active'})
-
+"""
 
 @mock.patch('bipostaldash.views.os.urandom')
 def test_new_alias(urandom_mock):
     urandom_mock.return_value = ''.join(map(chr, [0, 1, 61, 62, 63, 64]))
+    result_val = '01pqrs'
     request = JSONRequest(get="")
     request.environ['HTTP_HOST'] = 'browserid.org'
+    #alias should be lower case, even if the urandom picked upper.
     eq_(views.new_alias(request), 
-            '01Z012@browserid.org')
+            '%s@browserid.org' % result_val)
     # Cornice currently faults on passing domain.
     request.environ['HTTP_HOST'] = 'woo.com'
     eq_(views.new_alias(request), 
-            '01Z012@woo.com')
+            '%s@woo.com' % result_val)
 
 
 class AppTest(unittest2.TestCase):
