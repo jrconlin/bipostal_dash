@@ -27,7 +27,7 @@ class BrowserIDAuth(object):
         if audience is None:
             audience = request.host
         if assertion is None and 'assertion' in request.params:
-            assertion = \ 
+            assertion = \
              urllib2.unquote(request.params.get('assertion')).strip()
         if assertion is None:
             return None
