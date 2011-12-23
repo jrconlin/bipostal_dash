@@ -2,7 +2,7 @@ from StringIO import StringIO
 from base64 import urlsafe_b64decode
 from services import logger
 import json
-# urllib doesn't know https. pycurl does. 
+# urllib doesn't know https. pycurl does.
 import pycurl
 import urllib
 import urllib2
@@ -10,15 +10,15 @@ import urllib2
 
 class BrowserIDAuth(object):
 
-    def __init__(self, 
+    def __init__(self,
             **kw):
         pass
 
     def create_user(self, assertion=None, **kw):
         self._raw_assertion = assertion
-        
-    def get_user_id(self, 
-            request, 
+
+    def get_user_id(self,
+            request,
             audience=None,
             assertion=None):
         session = request.session
@@ -40,7 +40,7 @@ class BrowserIDAuth(object):
                 return parsed_cert['certificates'][0]\
                         ['payload']['principal']['email']
             else:
-                remote_host = config.get('auth.auth_url', 
+                remote_host = config.get('auth.auth_url',
                         'https://browserid.org/verify')
                 post_data = urllib.urlencode({'assertion': assertion,
                     'audience': audience})
@@ -93,5 +93,5 @@ class BrowserIDAuth(object):
                     'payload': json.loads(self._decode(rpayload)),
                     'ig': self._decode(rsig)}
         except Exception, e:
-            logger.error("Could not parse assertion [%s]" %  repr(e))
+            logger.error("Could not parse assertion [%s]" % repr(e))
         return jwso

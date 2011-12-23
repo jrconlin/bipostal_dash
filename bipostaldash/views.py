@@ -3,14 +3,12 @@ import os
 import re
 import string
 
-from pyramid import httpexceptions as http
-from pyramid.response import Response
 from bipostaldash.auth.default import DefaultAuth
 from bipostaldash.auth.default import DefaultKeyStore
-from mako.template import Template
-
-
 from cornice import Service
+from mako.template import Template
+from pyramid import httpexceptions as http
+from pyramid.response import Response
 
 # Cornice currently renders JSON only. So only REST functions use it.
 gen_alias = Service(name='new_alias', path='/new_alias/',
@@ -22,16 +20,15 @@ aliases = Service(name='aliases', path='/alias/',
 alias_detail = Service(name='alias-detail', path='/alias/{alias}',
                        description='Manage a single alias.')
 
-login_service  = Service(name='login', path='/',
+login_service = Service(name='login', path='/',
                     description='Login to service')
-
 
 logger = logging.getLogger(__file__)
 
 
-
 # Not the best; just make sure it looks like x@y.z.
 EMAIL_RE = '[^@]+@[^.]+.\w+'
+
 
 def default_domain(request):
     return request.environ.get('HTTP_HOST', 'browserid.org')
@@ -50,6 +47,7 @@ def new_alias(request, root=None, domain=None):
     if domain is None:
         domain = default_domain(request)
     return make_alias(domain=domain)
+
 
 @aliases.get()
 def list_aliases(request):
@@ -91,7 +89,7 @@ def add_alias(request):
                 (token, audience) = alias.split('@')
             if alias is None and audience is not None:
                 alias = make_alias(domain=audience)
-        except Exception, e: 
+        except Exception, e:
             logging.error(repr(e))
             raise http.HTTPBadRequest()
     if not re.match(EMAIL_RE, alias) or db.resolve_alias(alias):
@@ -150,15 +148,16 @@ def change_alias(request):
     rv = db.add_alias(user=email, alias=alias, status=active)
     return rv
 
+
 def _gen_keys(config):
     """ Generate and register the oauth keys for this user """
     # build the keys from the token generator
     result = {
             'consumer_key': make_alias().split('@')[0],
-            'shared_secret': make_alias().split('@')[0]
-            }
+            'shared_secret': make_alias().split('@')[0]}
     #stuff them into redis for lookup and auth.
     return result
+
 
 @login_service.get()
 @login_service.post()
@@ -172,10 +171,10 @@ def login(request):
         email = auth.get_user_id(request)
         keys = key_store.get_keys(request)
         if email is None:
-            template = Template(filename = os.path.join('bipostaldash',
+            template = Template(filename=os.path.join('bipostaldash',
                 'templates', 'login.mako'))
             response = Response(str(template.render()),
-                    status = 403)
+                    status=403)
             if (session.get('uid')):
                 del(session['uid'])
             session.persist()
@@ -188,25 +187,23 @@ def login(request):
         raise http.HTTPUnauthorized()
     if session.get('keys') is None:
         keys = _gen_keys(config=request.registry.get('config'))
-        logger.info('logging user in, creating keys. %s : %s' % 
+        logger.info('logging user in, creating keys. %s : %s' %
             (keys['consumer_key'], keys['shared_secret']))
         key_store.add(keys['consumer_key'], keys['shared_secret'])
-        session['keys'] = keys;
+        session['keys'] = keys
     if 'javascript' in request.response.content_type:
-        response = {'consumer_key': 
+        response = {'consumer_key':
                     keys.get('consumer_key'),
-                    'shared_secret': 
+                    'shared_secret':
                     keys.get('shared_secret')}
     else:
-        template = Template(filename = os.path.join('bipostaldash',
+        template = Template(filename=os.path.join('bipostaldash',
                 'templates', 'mainpage.mako'))
-        response = Response(str(template.render(user = email,
-                    keys = keys,
-                    request = request)))
+        response = Response(str(template.render(user=email,
+                    keys=keys,
+                    request=request)))
 
     # set the beakerid
     session['uid'] = email
     session.save()
     return response
-
-

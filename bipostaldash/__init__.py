@@ -18,10 +18,10 @@ def main(global_config, **settings):
     config.registry['key_store'] = configure_from_settings(
         'key_store', settings['config'].get_map('key_store'))
 
-    config.registry['auth'] = configure_from_settings (
+    config.registry['auth'] = configure_from_settings(
         'auth', settings['config'].get_map('auth'))
 
-    config.registry['dash_auth'] = configure_from_settings (
+    config.registry['dash_auth'] = configure_from_settings(
         'dash_auth', settings['config'].get_map('dash_auth'))
 
     config.registry['config'] = settings['config'].get_map()

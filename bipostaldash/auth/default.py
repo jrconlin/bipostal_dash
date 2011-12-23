@@ -1,20 +1,23 @@
 from pyramid.security import authenticated_userid
 
+
 class DefaultAuth(object):
 
     def get_user_id(self, request):
         return authenticated_userid(request)
+
 
 class DefaultKeyStore(object):
     _instance = None
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
-            cls._instance = super(DefaultKeyStore, cls).__new__(cls, *args, **kwargs)
+            cls._instance = super(DefaultKeyStore,
+                    cls).__new__(cls, *args, **kwargs)
         return cls._instance
 
     def __init__(self, **kwargs):
-        self.exp = [None for i in range(0,200)]
+        self.exp = [None for i in range(0, 200)]
         self.store = {}
 
     def add(self, key, data):
@@ -29,4 +32,3 @@ class DefaultKeyStore(object):
 
     def get_keys(self, request):
         return request.session.get('keys', None)
-

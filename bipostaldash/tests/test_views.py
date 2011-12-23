@@ -1,16 +1,15 @@
+import bipostaldash
 import json
+import mock
 import os
 import unittest2
-
-import mock
 import webtest
-from pyramid import testing
-from pyramid import httpexceptions as http
-from nose.tools import eq_
-
 from bipostal.storage import mem
 from bipostaldash import views
-import bipostaldash
+from nose.tools import eq_
+from pyramid import httpexceptions as http
+from pyramid import testing
+
 
 class JSONRequest(testing.DummyRequest):
 
@@ -30,8 +29,7 @@ class DummyAuth(object):
         self.response = response
 
     def get_user_id(self, request):
-        return self.response;
-
+        return self.response
 
 
 class ViewTest(unittest2.TestCase):
@@ -41,7 +39,8 @@ class ViewTest(unittest2.TestCase):
         self.email = 'email@example.com'
         self.audience = 'example.com'
         self.config.testing_securitypolicy(userid=self.email, permissive=True)
-        self.request = JSONRequest(post = json.dumps({'alias': '123abc@example.com',
+        self.request = JSONRequest(post=json.dumps({'alias':
+                '123abc@example.com',
             'audience': self.audience}))
         self.request.registry['storage'] = mem.Storage()
         # Default Auth:
@@ -93,7 +92,7 @@ class ViewTest(unittest2.TestCase):
 
     def test_get_alias(self):
         alias = views.add_alias(self.request)['alias']
-        self.request.matchdict = {'alias': alias ,
+        self.request.matchdict = {'alias': alias,
                 'audience': self.audience}
         response = views.get_alias(self.request)
         eq_(response, {'email': self.email,
@@ -127,7 +126,7 @@ class ViewTest(unittest2.TestCase):
         eq_(views.list_aliases(self.request),
             {'email': self.email, 'aliases': []})
 
-"""        
+"""
     def test_change_alias(self):
         import pdb; pdb.set_trace()
         alias = views.add_alias(self.request)['alias']
@@ -149,6 +148,7 @@ class ViewTest(unittest2.TestCase):
                        'status': 'active'})
 """
 
+
 @mock.patch('bipostaldash.views.os.urandom')
 def test_new_alias(urandom_mock):
     urandom_mock.return_value = ''.join(map(chr, [0, 1, 61, 62, 63, 64]))
@@ -156,16 +156,15 @@ def test_new_alias(urandom_mock):
     request = JSONRequest(get="")
     request.environ['HTTP_HOST'] = 'browserid.org'
     #alias should be lower case, even if the urandom picked upper.
-    eq_(views.new_alias(request), 
+    eq_(views.new_alias(request),
             '%s@browserid.org' % result_val)
     # Cornice currently faults on passing domain.
     request.environ['HTTP_HOST'] = 'woo.com'
-    eq_(views.new_alias(request), 
+    eq_(views.new_alias(request),
             '%s@woo.com' % result_val)
 
 
 class AppTest(unittest2.TestCase):
-
 
     def setUp(self):
         # Grab the development ini file.
@@ -176,4 +175,3 @@ class AppTest(unittest2.TestCase):
 
     def test_root(self):
         self.testapp.get('/', status=403)
-

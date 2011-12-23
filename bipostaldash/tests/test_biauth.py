@@ -2,12 +2,11 @@
 import os
 import unittest2
 
-from pyramid import testing
-#from pyramid import httpexceptions as httpx
-from nose.tools import eq_
-
 from bipostal.storage import mem
 from bipostaldash.auth.browserid import BrowserIDAuth
+from nose.tools import eq_
+from pyramid import testing
+
 
 class BrowerIDTest(unittest2.TestCase):
 
@@ -16,7 +15,6 @@ class BrowerIDTest(unittest2.TestCase):
         path = os.path.join('bipostaldash', 'tests', 'assert.txt')
         self.assertion = open(path).read().strip()
         self.auth = BrowserIDAuth(auth_server='browserid.org')
-        
 
     def tearDown(self):
         testing.tearDown()
@@ -26,8 +24,6 @@ class BrowerIDTest(unittest2.TestCase):
         request.params['assertion'] = self.assertion
         request.registry['storage'] = mem.Storage()
         request.registry['config'] = {
-                'auth.local_auth': True
-                }
+                'auth.local_auth': True}
         response = self.auth.get_user_id(request)
         eq_(response, 'test@unitedheroes.net')
-
