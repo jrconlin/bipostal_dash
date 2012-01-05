@@ -34,19 +34,28 @@ def default_domain(request):
     return request.environ.get('HTTP_HOST', 'browserid.org')
 
 
-def make_alias(length=64, domain=None):
+def make_alias(length=64, domain=None, prefix=None, **kw):
     chars = string.digits + string.lowercase
     base = len(chars)
-    token = ''.join(chars[ord(x) % base] for x in os.urandom(length))
+    token = ''
+    if prefix is not None:
+        token = prefix
+        length = length - len(prefix)
+    token = token + (''.join(chars[ord(x) % base] for x in os.urandom(length)))
     token = token.lower()
     return '%s@%s' % (token, domain)
 
 
 @gen_alias.get()
-def new_alias(request, root=None, domain=None):
+def new_alias(request, root=None, domain=None, prefix=None, **kw):
+    config = request.registry.get('config', {})
     if domain is None:
         domain = default_domain(request)
-    return make_alias(domain=domain)
+    if prefix is None:
+        prefix = str(config.get('global.shard',None))
+        if prefix is not None:
+            prefix = prefix.rjust(config.get('global.shard_pad', 3), '0')
+    return make_alias(domain=domain, prefix=prefix)
 
 
 @aliases.get()
