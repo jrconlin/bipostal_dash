@@ -52,9 +52,9 @@ def new_alias(request, root=None, domain=None, prefix=None, **kw):
     if domain is None:
         domain = default_domain(request)
     if prefix is None:
-        prefix = str(config.get('global.shard',None))
+        prefix = config.get('global.shard',None)
         if prefix is not None:
-            prefix = prefix.rjust(config.get('global.shard_pad', 3), '0')
+            prefix = str(prefix).rjust(config.get('global.shard_pad', 3), '0')
     return make_alias(domain=domain, prefix=prefix)
 
 
