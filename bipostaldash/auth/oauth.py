@@ -1,9 +1,9 @@
 import base64
 import hashlib
 import hmac
+import logging
 import re
 import urllib2
-from services import logging
 
 
 class NonceRing(object):

@@ -1,11 +1,11 @@
-from StringIO import StringIO
-from base64 import urlsafe_b64decode
-from services import logger
 import json
 # urllib doesn't know https. pycurl does.
+import logging
 import pycurl
 import urllib
 import urllib2
+from StringIO import StringIO
+from base64 import urlsafe_b64decode
 
 
 class BrowserIDAuth(object):
@@ -55,7 +55,7 @@ class BrowserIDAuth(object):
                 try:
                     curl.perform()
                 except Exception, e:
-                    logger.error('Error verifying: %s' % repr(e))
+                    logging.error('Error verifying: %s' % repr(e))
                     return None
                 curl.close()
                 response = json.loads(rb.getvalue())
@@ -64,14 +64,14 @@ class BrowserIDAuth(object):
                 return None
 
         except Exception, e:
-            logger.info("Bad assertion [%s]" % repr(e))
+            logging.info("Bad assertion [%s]" % repr(e))
             return None
 
     def _decode(self, dstr):
         try:
             return urlsafe_b64decode(self._check_b64pad(str(dstr)))
         except TypeError, e:
-            logger.error("Decode Error %s [%s]" % (dstr, str(e)))
+            logging.error("Decode Error %s [%s]" % (dstr, str(e)))
             return None
 
     def _check_b64pad(self, string):
@@ -93,5 +93,5 @@ class BrowserIDAuth(object):
                     'payload': json.loads(self._decode(rpayload)),
                     'ig': self._decode(rsig)}
         except Exception, e:
-            logger.error("Could not parse assertion [%s]" % repr(e))
+            logging.error("Could not parse assertion [%s]" % repr(e))
         return jwso
