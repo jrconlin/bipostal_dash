@@ -20,6 +20,9 @@ aliases = Service(name='aliases', path='/alias/',
 alias_detail = Service(name='alias-detail', path='/alias/{alias}',
                        description='Manage a single alias.')
 
+user = Service(name='user', path='/user/', 
+                  description='Get user info')
+
 login_service = Service(name='login', path='/',
                     description='Login to service')
 
@@ -216,3 +219,30 @@ def login(request):
     session['uid'] = email
     session.save()
     return response
+
+@user.get()
+def get_user(request):
+    auth = request.registry.get('dash_auth', DefaultAuth())
+    email = auth.get_user_id(request)
+    if email is None:
+        return http.HTTPForbidden()
+    db = request.registry['storage']
+    return db.get_user(email)
+
+@user.post()
+def update_user(request):
+    try:
+        auth = request.registry.get('dash_auth', DefaultAuth())
+        email = auth.get_user_id(request)
+        alias = request.json_body.get('alias', email)
+        metainfo = request.json_body.get('metainfo', None)
+        if email is None:
+            return http.HTTPForbidden()
+        db = request.registry['storage']
+        user_info = db.get_user(email)
+        metainfo = user_info.get('metainfo', {}).update(metainfo)
+        return db.create_user(email, alias, metainfo)
+    except Exception, e:
+        logger.error('Could not update record: [%s]' % repr(e))
+        raise
+
