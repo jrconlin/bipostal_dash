@@ -13,37 +13,7 @@
   <head>
     <meta charset="utf-8">
     <title>Manage your BrowserID aliases</title>
-    <style>
-      body {
-        color: #333;
-      }
-      h2 {
-        font-size: 1.17em;
-      }
-      #email {
-        color: #D95B43;
-      }
-      #aliases {
-        display: table;
-        padding: 0;
-      }
-      #aliases li {
-        line-height: 2em;
-        display: table-row;
-        font-family: monospace;
-        -moz-transition-property: *;
-        -moz-transition-duration: .75s;
-      }
-      #aliases li.new {
-        background-color: #ECD078;
-      }
-      #aliases li span, #aliases li a {
-        display: table-cell;
-      }
-      #aliases li span {
-        padding-right: 2em;
-      }
-    </style>
+    <link rel="stylesheet" type="text/css" href="style.css" />
   </head>
   <body>
     <hgroup>
@@ -55,9 +25,12 @@
       <button id="new">Get a new alias.</button>
     <ul id="aliases">
     </ul>
+    <footer>
+    <button id="logout">Logout</button>
+    </footer>
     <script src="jquery-underscore-backbone.js"></script>
     <script src="/OAuthSimple.js" type="text/javascript"></script>
-    <script>
+    <script type="text/javascript">
         "use strict";
 
         Backbone.old_sync = Backbone.sync;
@@ -84,6 +57,7 @@
             options.url = signed.signed_url;
             }
         );
+
       var Alias = Backbone.Model.extend({
           initialize: function(attributes) {
           this.id = attributes.alias;
@@ -117,7 +91,7 @@
 
         render: function() {
           var html = '<span>' + this.model.get('alias') + '</span>';
-          html += '<a class="delete" href="#" title="Delete this alias">[x]</a>';
+          html += '<a class="button delete" href="#" title="Delete this alias">X</a>';
           $(this.el).html(html);
           return this;
         }
@@ -127,9 +101,12 @@
         el: $('body'),
 
         initialize: function() {
-          this.aliases = new Aliases;
+            this.aliases = new Aliases;
+            console.debug('binding');
           this.aliases.bind('reset', this.render, this);
           this.aliases.bind('add', this.append, this);
+          this.aliases.bind('logout', this.logout, this);
+          console.debug('bound logout');
           this.aliases.fetch();
         },
 
@@ -150,7 +127,8 @@
         },
 
         events: {
-          'click #new': 'newAlias'
+            'click #new': 'newAlias',
+            'click #logout': 'logout'
         },
 
         newAlias: function() {
@@ -161,9 +139,26 @@
             function(response) {
                 self.aliases.add(response);
             });
+        },
+        logout: function () {
+            var self = this;
+            $.ajax({url: '/',
+                type: 'DELETE',
+                contentType: 'application/javascript',
+                success: function (data, status, xhr) {
+                    document.location = "/";
+                },
+                error: function (xhr, status, error){
+                    console.error(status);
+                    console.error(error);
+                    $('#logout').disable();
+                }
+            })
         }
       });
       window.App = new AppView;
+    console.debug('done');
+
     </script>
   </body>
 </html>

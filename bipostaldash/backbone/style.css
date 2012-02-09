@@ -1,0 +1,79 @@
+html {
+    background-color: #DCDCDC;
+    height: 100%;
+}
+body {
+    color: #333;
+    background-color: #FFF;
+    max-width: 50em;
+    height: 100%;
+    margin: 0 auto;
+    font-family: arial;
+    padding: 1em;
+  }
+h1 {
+    margin:0;
+}
+h2 {
+    font-size: 1.17em;
+    width: 25em;
+    text-align: right;
+    margin: 0 0 1em;
+  }
+#email {
+    color: #D95B43;
+  }
+#aliases {
+    display: table;
+    padding: 0;
+  }
+#aliases li {
+    line-height: 2em;
+    display: table-row;
+    font-family: monospace;
+    -moz-transition-property: *;
+    -moz-transition-duration: .75s;
+    box-shadow: 3px 3px 2px #888;
+  }
+#aliases li.new {
+    background-color: #ECD078;
+  }
+#aliases li span, #aliases li a {
+    display: table-cell;
+  }
+#aliases li span {
+    padding-right: 2em;
+}
+
+#aliases .delete {
+    background-color: red;
+    background-image: -moz-linear-gradient(center top , #db7774 0, #f01a45 100%);
+    box-shadow: 0 1px #f01a45 inset;
+    border: 1px solid #f01a45;
+    line-height: 1EX;
+    text-transform: uppercase;
+}
+footer {
+    position: absolute;
+    bottom: 0; 
+    padding-bottom: 10px;
+    display: block;
+    min-width: 50em;
+    background-color: white;
+}
+button, .button { border-radius: 5px;
+    text-decoration: none;
+    padding: 0 10px;
+    vertical-align: middle;
+    border: 1px solid rgb(55, 166, 255);
+    font-family: 'Droid Serif', Georgia, serif;
+    color: #FFF;
+    text-shadow: -1px -1px 0 rgb(55,166,255);
+    text-transform:LOWERCASE;
+    box-shadow: 0 1px rgb(118,194,255) inset;
+    background-color: rgb(55,166,255);
+    cursor: pointer;
+    outline: none;
+    background-image: -moz-linear-gradient(center top , rgb(118, 194, 255) 0pt, rgb(55, 166, 255) 100%);
+    -moz-box-sizing: border-box;
+    }

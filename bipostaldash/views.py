@@ -171,6 +171,23 @@ def _gen_keys(config):
     return result
 
 
+@login_service.delete()
+def logout(request):
+    """ Log the user out """
+    try:
+        session = request.session
+        auth = request.registry.get('dash_auth', DefaultAuth)
+        email = auth.get_user_id(request)
+        if email:
+            session['uid'] = None
+            session['keys'] = None
+            session.save()
+            return True
+    except Exception, e:
+        logging.error(repr(e))
+        return False
+
+
 @login_service.get()
 @login_service.post()
 def login(request):
