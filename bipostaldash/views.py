@@ -4,7 +4,6 @@ import re
 import string
 
 from bipostaldash.auth.default import DefaultAuth
-from bipostaldash.auth.default import DefaultKeyStore
 from cornice import Service
 from mako.template import Template
 from pyramid import httpexceptions as http
@@ -161,14 +160,13 @@ def change_alias(request):
     return rv
 
 
-def _gen_keys(config):
+def _gen_keys(auth, config):
     """ Generate and register the oauth keys for this user """
     # build the keys from the token generator
-    result = {
-            'consumer_key': make_alias().split('@')[0],
-            'shared_secret': make_alias().split('@')[0]}
-    #stuff them into redis for lookup and auth.
-    return result
+    return auth.gen_keys(access=make_alias().split('@')[0],
+            secret=make_alias().split('@')[0],
+            refresh=make_alias().split('@')[0],
+            config=config)
 
 
 @login_service.delete()
@@ -194,11 +192,10 @@ def login(request):
     """ Accept the browserid auth element """
     try:
         session = request.session
+        config = request.registry.get('config', {})
         # Use a different auth mechanism for user login.
         auth = request.registry.get('dash_auth', DefaultAuth())
-        key_store = request.registry.get('key_store', DefaultKeyStore())
         email = auth.get_user_id(request)
-        keys = key_store.get_keys(request)
         if email is None:
             template = Template(filename=os.path.join('bipostaldash',
                 'templates', 'login.mako'))
@@ -215,16 +212,12 @@ def login(request):
         logging.info('Invalid or missing credentials [%s]' % repr(e))
         raise http.HTTPUnauthorized()
     if session.get('keys') is None:
-        keys = _gen_keys(config=request.registry.get('config'))
-        logger.info('logging user in, creating keys. %s : %s' %
-            (keys['consumer_key'], keys['shared_secret']))
-        key_store.add(keys['consumer_key'], keys['shared_secret'])
+        keys = _gen_keys(auth=auth, config=config)
+        logger.info('logging user in, creating keys. %s  ' %
+            repr(keys))
         session['keys'] = keys
     if 'javascript' in request.response.content_type:
-        response = {'consumer_key':
-                    keys.get('consumer_key'),
-                    'shared_secret':
-                    keys.get('shared_secret')}
+        response = auth.getResponse(keys, config)
     else:
         template = Template(filename=os.path.join('bipostaldash',
                 'templates', 'mainpage.mako'))

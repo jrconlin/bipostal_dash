@@ -37,6 +37,7 @@
 
         jQuery.ajaxPrefilter( function (options, originalOptions, jqXHR){
             console.debug(options, originalOptions, jqXHR);
+            // rebuild this to use MacAuth (and build MacAuth) 
             var oauth = OAuthSimple('${keys.get('consumer_key')}', 
                 '${keys.get('shared_secret')}');
             var elem = options.url.split('?')

@@ -77,6 +77,7 @@ class OAuth(object):
     def get_user_id(self, request):
         # Only use GET Params for OAuth.
         params = request.GET
+        import pdb; pdb.set_trace()
         session = request.session
 
         # Is this an OAuth request?
@@ -132,3 +133,18 @@ class OAuth(object):
             return session.get('uid')
         logging.error("invalid signature")
         return None
+
+    def gen_keys(self, access, secret, refresh, config):
+        return {
+                'oauth_consumer_key': access,
+                'shared_secret': secret,
+                'refresh_token': refresh,
+                'token_type': 'oauth',
+                }
+
+    def header(self, error=None):
+        response = 'WWW-Authenticate: OAuth'
+        if error:
+            response += 'error="%s"' % error.replace('"', '\\"')
+        return response
+
