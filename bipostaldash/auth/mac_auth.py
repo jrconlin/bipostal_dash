@@ -1,4 +1,3 @@
-import base64
 import hashlib
 import hmac
 import logging
@@ -45,24 +44,28 @@ class MacAuth(object):
 
     validMacMethods = { 'mac-sha-1': hashlib.sha1,
             'mac-sha-256': hashlib.sha256}
+    _port = None
 
-    def __init(self, **kw):
+    def __init__(self, **kw):
+        if ('server.port' in kw):
+            self._port = kw.get('server.port')
         pass
 
     def genNonce(self, len=8):
         chars = string.digits + string.letters
         return ''.join(random.sample(chars, len))
 
-    def genNormalizedRequestString(self, **args):
+    def getNormalizedRequestString(self, **args):
         normalizedRequestArray = [
                 args.get('ts'),
                 args.get('nonce'),
                 args.get('method').upper(),
                 args.get('request_uri'),
                 args.get('host'),
-                args.get('port'),
-                args.get('ext')]
-        return '\n'.join(normalizedRequestArray)
+                str(args.get('port','80')),
+                args.get('ext','')]
+        # remember to include the final "\n".
+        return "\n".join(normalizedRequestArray) + "\n"
 
     def validate(self, request):
         headers = request.headers
@@ -80,7 +83,7 @@ class MacAuth(object):
             logging.error('Missing MAC key. How did we get here?')
             raise MacAuthException('No MAC key defined')
         items = {}
-        for (key, value) in map(re.findall('(\w+)="([^"]+)"', auth)):
+        for (key, value) in re.findall('(\w+)="([^"]+)"', auth):
             items[key] = value
         request_uri = request.path_info
         if request.query_string:
@@ -91,13 +94,12 @@ class MacAuth(object):
             method=request.method,
             request_uri=request_uri,
             host=request.host,
-            port=request.server_port,
-            ext=items.get('ext'))
+            port=str(self._port or request.server_port),
+            ext=items.get('ext', ''))
         logging.info('Normalized: "%s"' % nrs)
-        macMethod = self.validMacMethods(session.get('auth.mac_type',
-                'mac-sha-1'))
-        testSig = base64.b64encode(hmac.new(mac_key, 
-            nrs, macMethod).digest())
+        macMethod = self.validMacMethods[session.get('auth.mac_type',
+                'mac-sha-1')]
+        testSig = hmac.new(mac_key, nrs, macMethod).hexdigest()
         logging.info('testing "%s" =? "%s"' % (testSig, items.get('mac')))
         return testSig == items.get('mac')
 

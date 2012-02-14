@@ -3,10 +3,10 @@
     user = pageargs.get('user', 'User')
     request = pageargs.get('request', {'registry': {}})
     keys = pageargs.get('keys', {
-        'consumer_key': request.registry.get('config', 
-            {}).get('auth.oauth.consumer_key', ''),
-        'shared_secret': request.registry.get('config', 
-            {}).get('auth.oauth.shared_secret', '')})
+        'access_token': request.registry.get('config', 
+            {}).get('auth.mac.access_token', ''),
+        'secret': request.registry.get('config', 
+            {}).get('auth.mac.mac_key', '')})
 
 %>
 <html>
@@ -29,41 +29,75 @@
     <button id="logout">Logout</button>
     </footer>
     <script src="jquery-underscore-backbone.js"></script>
-    <script src="/OAuthSimple.js" type="text/javascript"></script>
+    <script type="text/javascript" src="http://crypto-js.googlecode.com/files/2.5.3-crypto-sha1-hmac.js"></script>
+    <script type="text/javascript" src="http://crypto-js.googlecode.com/files/2.5.3-crypto-sha256-hmac.js"></script>
+    <script src="/MACAuth.js" type="text/javascript"></script>
     <script type="text/javascript">
-        "use strict";
 
         Backbone.old_sync = Backbone.sync;
 
-        jQuery.ajaxPrefilter( function (options, originalOptions, jqXHR){
-            console.debug(options, originalOptions, jqXHR);
-            // rebuild this to use MacAuth (and build MacAuth) 
-            var oauth = OAuthSimple('${keys.get('consumer_key')}', 
-                '${keys.get('shared_secret')}');
-            var elem = options.url.split('?')
-            var path = elem[0];
-            var params = elem[1]?elem[1]:'';
-            /*            
-            if (options.data) {
-                if (params.length) { 
-                    params += '&';
+        var methodMap = {
+            'create': 'POST',
+            'update': 'PUT',
+            'delete': 'DELETE',
+            'read': 'GET',
+        };
+
+        Backbone.sync = function (method, model, options) {
+            var type = methodMap[method];
+            var params = {type: type, dataType: 'json'};
+
+            var getValue = function(object, prop) {
+                if (!(object && object[prop])) return null;
+                return _.isFunction(object[prop]) ? object[prop]() : object[prop];
+            };
+            
+            if (!options.url) { 
+                params.url = getValue(model, 'url') || urlError();
+            }
+            if (!options.data && model && (method == 'create' || method == 'update')) {
+                params.contentType = 'application/json';
+                params.data = JSON.stringify(model.toJSON());
+            }
+
+            if (Backbone.emulateJSON) {
+                params.contentType = 'application/x-www-form-urlencoded';
+                params.data = params.data ? {model: params.data} : {};
+            }
+
+            if (Backbone.emulateHTTP) {
+                if (type === 'PUT' || type === 'DELETE') {
+                    if (Backbone.emulateJSON) params.data._method = type;
+                        params.type = 'POST';
+                        params.beforeSend = function(xhr) {
+                        xhr.setRequestHeader('X-HTTP-Method-Override', type);
+                    };
                 }
-                params += options.data;
             }
-            */            
-            // Unescaping path because jquery already escaped it.
-            var signed = oauth.sign({action: options.type,
-                path: unescape(path),
-                parameters: unescape(params)});
-            options.url = signed.signed_url;
+
+            if (params.type !== 'GET' && !Backbone.emulateJSON) {
+                params.processData = false;
             }
-        );
+
+            // add the signature
+            var macauth = new MACAuth({'access_token': '${keys.get('access_token')}', 
+                    'mac_key': '${keys.get('mac_key')}',
+                    'port': '80'}).setAction(params.type).setFromURL(params.url).sign();
+            console.debug(macauth);
+            if (!params.headers) {
+                params.headers = {'Authorization': macauth.header}
+            }else{
+                params.headers['Authorization'] = macauth.header;
+            }
+            console.debug(params);
+            return $.ajax(_.extend(params, options));
+      };
 
       var Alias = Backbone.Model.extend({
           initialize: function(attributes) {
           this.id = attributes.alias;
         },
-      });
+        });
 
       var Aliases = Backbone.Collection.extend({
           model: Alias,
@@ -90,7 +124,7 @@
           return false;
         },
 
-        render: function() {
+render: function() {
           var html = '<span>' + this.model.get('alias') + '</span>';
           html += '<a class="button delete" href="#" title="Delete this alias">X</a>';
           $(this.el).html(html);
@@ -102,12 +136,14 @@
         el: $('body'),
 
         initialize: function() {
+            console.debug('initialize');
             this.aliases = new Aliases;
             console.debug('binding');
           this.aliases.bind('reset', this.render, this);
           this.aliases.bind('add', this.append, this);
           this.aliases.bind('logout', this.logout, this);
           console.debug('bound logout');
+          console.debug(this.aliases.fetch());
           this.aliases.fetch();
         },
 
@@ -134,31 +170,44 @@
 
         newAlias: function() {
             var self = this;
+            console.debug('new_alias');          
             var audience = $('#audience')[0].value;
-            $.post(this.aliases.url, 
-            '{"audience": "' + audience + '"}',
-            function(response) {
-                self.aliases.add(response);
-            });
+            var macauth = new MACAuth({'access_token': '${keys.get('access_token')}', 
+                    'mac_key': '${keys.get('mac_key')}'}).setFromURL(this.aliases.url).sign();
+            $.ajax({url:this.aliases.url, 
+                    type: 'POST',
+                    datatype: 'json',
+                    data: '{"audience": "' + audience + '"}',
+                    success: function(response) {
+                        self.aliases.add(response);
+                        },
+                    headers:{'Authorization': macauth.header},
+                    });
         },
+
         logout: function () {
             var self = this;
+            var macauth = new MACAuth({'access_token': '${keys.get('access_token')}', 
+                    'mac_key': '${keys.get('mac_key')}'}).setFromURL('/').sign();
             $.ajax({url: '/',
-                type: 'DELETE',
-                contentType: 'application/javascript',
-                success: function (data, status, xhr) {
-                    document.location = "/";
-                },
-                error: function (xhr, status, error){
-                    console.error(status);
-                    console.error(error);
-                    $('#logout').disable();
-                }
-            })
+                    type: 'DELETE',
+                    headers:{'Authorization': macauth.header},
+                    contentType: 'application/javascript',
+                    success: function (data, status, xhr) {
+                        document.location = "/";
+                    },
+                    error: function (xhr, status, error){
+                        console.error(status);
+                        console.error(error);
+                        $('#logout').disable();
+                    }
+                })
         }
       });
+
+    console.debug('starting');
       window.App = new AppView;
-    console.debug('done');
+      console.debug('done');
 
     </script>
   </body>

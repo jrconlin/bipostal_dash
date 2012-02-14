@@ -62,9 +62,11 @@ def new_alias(request, root=None, domain=None, prefix=None, **kw):
 
 @aliases.get()
 def list_aliases(request):
+    import pdb; pdb.set_trace();
     db = request.registry['storage']
     auth = request.registry.get('auth', DefaultAuth)
     try:
+        import pdb; pdb.set_trace();
         email = auth.get_user_id(request)
         if email is None:
             logger.error('No email found for list request.')
@@ -194,8 +196,9 @@ def login(request):
         session = request.session
         config = request.registry.get('config', {})
         # Use a different auth mechanism for user login.
-        auth = request.registry.get('dash_auth', DefaultAuth())
-        email = auth.get_user_id(request)
+        login_auth = request.registry.get('dash_auth', DefaultAuth())
+        auth = request.registry.get('auth', DefaultAuth)
+        email = login_auth.get_user_id(request)
         if email is None:
             template = Template(filename=os.path.join('bipostaldash',
                 'templates', 'login.mako'))
@@ -222,7 +225,7 @@ def login(request):
         template = Template(filename=os.path.join('bipostaldash',
                 'templates', 'mainpage.mako'))
         response = Response(str(template.render(user=email,
-                    keys=keys,
+                    keys=session.get('keys'),
                     request=request)))
 
     # set the beakerid

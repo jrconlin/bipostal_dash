@@ -15,8 +15,10 @@
       <script src="http://browserid.org/include.js" type="text/javascript"></script>
       <script type="text/javascript">
           $(function() {
-          $('#signin').click(function(){
+             $('#signin').click(function(){
+              document.getElementsByTagName('body')[0].style.cursor='wait';
               navigator.id.getVerifiedEmail(function(assertion) {
+                  document.getElementsByTagName('body')[0].style.cursor='auto';
                   var form = $("<form method='POST' action='/' >" +
                       "<input type='hidden' name='assertion' value='" + assertion +
                       "'/><input type='hidden' name='audience' value='bipostal.browserid.org'>" + 
