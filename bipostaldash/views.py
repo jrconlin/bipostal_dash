@@ -62,11 +62,9 @@ def new_alias(request, root=None, domain=None, prefix=None, **kw):
 
 @aliases.get()
 def list_aliases(request):
-    import pdb; pdb.set_trace();
     db = request.registry['storage']
     auth = request.registry.get('auth', DefaultAuth)
     try:
-        import pdb; pdb.set_trace();
         email = auth.get_user_id(request)
         if email is None:
             logger.error('No email found for list request.')
@@ -136,7 +134,9 @@ def delete_alias(request):
         raise http.HTTPUnauthorized()
     db = request.registry['storage']
     alias = request.matchdict['alias']
-    audience = request.matchdict['audience']
+    audience = None;
+    if 'audience' in request.matchdict:
+        audience = request.matchdict['audience']
     rv = db.delete_alias(user=email, alias=alias, origin=audience)
     logger.info('Deleting alias for %s.', email)
     return rv

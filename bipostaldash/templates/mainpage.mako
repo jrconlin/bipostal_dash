@@ -124,7 +124,7 @@
           return false;
         },
 
-render: function() {
+        render: function() {
           var html = '<span>' + this.model.get('alias') + '</span>';
           html += '<a class="button delete" href="#" title="Delete this alias">X</a>';
           $(this.el).html(html);
@@ -173,7 +173,7 @@ render: function() {
             console.debug('new_alias');          
             var audience = $('#audience')[0].value;
             var macauth = new MACAuth({'access_token': '${keys.get('access_token')}', 
-                    'mac_key': '${keys.get('mac_key')}'}).setFromURL(this.aliases.url).sign();
+                    'mac_key': '${keys.get('mac_key')}'}).setAction('POST').setFromURL(this.aliases.url).sign();
             $.ajax({url:this.aliases.url, 
                     type: 'POST',
                     datatype: 'json',
@@ -188,7 +188,7 @@ render: function() {
         logout: function () {
             var self = this;
             var macauth = new MACAuth({'access_token': '${keys.get('access_token')}', 
-                    'mac_key': '${keys.get('mac_key')}'}).setFromURL('/').sign();
+                    'mac_key': '${keys.get('mac_key')}'}).setAction('DELETE').setFromURL('/').sign();
             $.ajax({url: '/',
                     type: 'DELETE',
                     headers:{'Authorization': macauth.header},
