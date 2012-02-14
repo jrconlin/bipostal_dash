@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import hmac
 import logging
@@ -99,7 +100,7 @@ class MacAuth(object):
         logging.info('Normalized: "%s"' % nrs)
         macMethod = self.validMacMethods[session.get('auth.mac_type',
                 'mac-sha-1')]
-        testSig = hmac.new(mac_key, nrs, macMethod).hexdigest()
+        testSig = base64.b64encode(hmac.new(mac_key, nrs, macMethod).digest())
         logging.info('testing "%s" =? "%s"' % (testSig, items.get('mac')))
         return testSig == items.get('mac')
 

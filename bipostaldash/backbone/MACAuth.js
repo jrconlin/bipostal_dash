@@ -28,6 +28,13 @@ if (MACAuth === undefined)
             return this;
         };
 
+        self.b64encoder = function(string) {
+            if (window.btoa) {
+                return window.btoa(string);
+            }
+            throw ('Crap, no btoa!');
+        };
+
         /** Set the target URL (does not include the parameters)
          *
          * @param path {string} the fully qualified URI (excluding query arguments) (e.g "http://example.org/foo")
@@ -150,7 +157,7 @@ if (MACAuth === undefined)
                 sha = Crypto.SHA256;
             }
             // console.debug(sbs);
-            mac = Crypto.HMAC(sha, sbs, args['mac_key'], {asHexString: true});
+            mac = self.b64encoder(Crypto.HMAC(sha, sbs, args['mac_key'], {asString: true}));
             return {
                 signature: mac,
                 sbs: sbs,
