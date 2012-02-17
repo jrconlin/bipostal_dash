@@ -45,6 +45,10 @@ h2 {
     padding-right: 2em;
 }
 
+#aliases .inactive {
+    color: #CCC;
+}
+
 #aliases .delete {
     background-color: red;
     background-image: -moz-linear-gradient(center top , #db7774 0, #f01a45 100%);

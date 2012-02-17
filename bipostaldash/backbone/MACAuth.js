@@ -39,10 +39,13 @@ if (MACAuth === undefined)
          *
          * @param path {string} the fully qualified URI (excluding query arguments) (e.g "http://example.org/foo")
          */
-        self.setFromURL = function (path) {
+        self.setFromURL = function (path, action) {
             re = new RegExp('((https?)://([^:/]+)(:(\\d+))?)?(/.*)?');
             if (path == '') {
                 throw ('No path specified for MACAuth.setURL');
+            }
+            if (action) {
+                self.setAction(action);
             }
             matches = re.exec(path);
             self._args['host'] = matches[3];
@@ -74,7 +77,7 @@ if (MACAuth === undefined)
             if (action.match('[^A-Z]')) {
                 throw ('Invalid action specified for MACAuth.setAction');
                 }
-            this._action = action;
+            self._args['action'] = action;
             return this;
         };
 
@@ -119,7 +122,7 @@ if (MACAuth === undefined)
             args = self._merge(args, self._args);
             // Set any given parameters
             if(args['action'] == undefined) {
-                args['action'] = 'GET';
+                args['action'] = this._action || 'GET';
                 }
             if (args['port'] == undefined) {
                 port = '80';
@@ -147,25 +150,29 @@ if (MACAuth === undefined)
             var sb = [args['ts'], 
                 args['nonce'], 
                 args['action'].toUpperCase(),
-                args['uri'],
+                unescape(args['uri']),
                 args['host'],
                 args['port'],
                 args['ext']];
-            var sbs = sb.join("\n") + "\n";
+            args['sbs'] = sb.join("\n") + "\n";
             var sha = Crypto.SHA1;
             if (args['mac_algorithm'].toLowerCase() == 'mac-sha-256') {
                 sha = Crypto.SHA256;
             }
-            // console.debug(sbs);
-            mac = self.b64encoder(Crypto.HMAC(sha, sbs, args['mac_key'], {asString: true}));
+            args['mac'] = self.b64encoder(Crypto.HMAC(sha,
+                        args['sbs'], 
+                        args['mac_key'], 
+                        {asString: true}));
+            console.debug("=======");
+            console.debug(args);
             return {
-                signature: mac,
-                sbs: sbs,
+                signature: args['mac'],
+                sbs: args['sbs'],
                 header: 'MAC id="' + args['access_token'] +
                     '", ts="' + args['ts'] +
                     '", nonce="' + args['nonce'] +
                     '", ext="' + args['ext'] + 
-                    '", mac="' + mac + '"'
+                    '", mac="' + args['mac'] + '"'
                 };
         };
 

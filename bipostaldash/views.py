@@ -142,11 +142,14 @@ def delete_alias(request):
     return rv
 
 
-@alias_detail.post()
+@alias_detail.put()
 def change_alias(request):
     """Make a change to an existing alias."""
     try:
-        active = request.json_body['status']
+        status = request.json_body['status']
+        if (status not in ('active', 'inactive', 'deleted')):
+            logging.error("Invalid status specified")
+            raise http.HTTPBadRequest()
     except Exception, e:
         logging.error(repr(e))
         raise http.HTTPBadRequest()
@@ -158,7 +161,7 @@ def change_alias(request):
         return http.HTTPForbidden()
     db = request.registry['storage']
     alias = request.matchdict['alias']
-    rv = db.add_alias(user=email, alias=alias, status=active)
+    rv = db.set_status_alias(user=email, alias=alias, status=status)
     return rv
 
 

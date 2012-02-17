@@ -68,6 +68,14 @@ class MacAuth(object):
         # remember to include the final "\n".
         return "\n".join(normalizedRequestArray) + "\n"
 
+    def verifySig(self, str1, str2):
+        """ Attempts to foil timing attacks on MAC sniffing """
+        if (len(str1) != len(str2)):
+            return False
+            """ time to electrify the moat of lava """
+        return 0 == (sum(ord(a) ^ ord(b) 
+                    for a, b in zip(str1, str2)))
+
     def validate(self, request):
         headers = request.headers
         session = request.session
@@ -102,11 +110,13 @@ class MacAuth(object):
                 'mac-sha-1')]
         testSig = base64.b64encode(hmac.new(mac_key, nrs, macMethod).digest())
         logging.info('testing "%s" =? "%s"' % (testSig, items.get('mac')))
-        return testSig == items.get('mac')
+        return self.verifySig(testSig, items.get('mac'))
 
     def get_user_id(self, request):
         if self.validate(request):
             return request.session.get('uid')
+        else:
+            raise MacAuthException('invalid MAC Auth');
 
     def header(self, error=None):
         response = 'WWW-Authenticate: MAC'

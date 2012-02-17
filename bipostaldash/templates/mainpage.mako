@@ -28,6 +28,12 @@
     <footer>
     <button id="logout">Logout</button>
     </footer>
+    <!-- dev version 
+    <script src="jquery-1.7.1.js"></script>
+    <script src="underscore.js"></script>
+    <script src="backbone.js"></script>
+    -->
+    <!-- minified version --> 
     <script src="jquery-underscore-backbone.js"></script>
     <script type="text/javascript" src="http://crypto-js.googlecode.com/files/2.5.3-crypto-sha1-hmac.js"></script>
     <script type="text/javascript" src="http://crypto-js.googlecode.com/files/2.5.3-crypto-sha256-hmac.js"></script>
@@ -43,6 +49,12 @@
             'read': 'GET',
         };
 
+        var disable_labels = {
+            true: 'enable',
+            false: 'disable'
+        }
+    
+        // Sadly, copied wholesale from the source with one minor change.
         Backbone.sync = function (method, model, options) {
             var type = methodMap[method];
             var params = {type: type, dataType: 'json'};
@@ -83,13 +95,11 @@
             var macauth = new MACAuth({'access_token': '${keys.get('access_token')}', 
                     'mac_key': '${keys.get('mac_key')}',
                     'port': '80'}).setAction(params.type).setFromURL(params.url).sign();
-            console.debug(macauth);
             if (!params.headers) {
                 params.headers = {'Authorization': macauth.header}
             }else{
                 params.headers['Authorization'] = macauth.header;
             }
-            console.debug(params);
             return $.ajax(_.extend(params, options));
       };
 
@@ -113,7 +123,26 @@
         tagName: 'li',
 
         events: {
-          'click .delete': 'destroy'
+        'click .delete': 'destroy',
+        'click .disable': 'toggle'
+        },
+
+        toggle: function(o) {
+            ret = this.model.save('status',  
+                    (this.el.classList.contains('inactive') ? 'active' : 'inactive'),
+                    {
+                        success: function (model, response) {
+                        // jquery has problems with $('#' + response.alias)
+                            li = document.getElementById(response.alias);
+                            $(li).toggleClass('inactive');
+                            lih = li.getElementsByClassName('disable')[0];
+                            lih.innerHTML = disable_labels[lih.innerHTML == disable_labels[false]]
+                        }
+                    }
+                )
+            console.debug(ret);
+           //     this.el.classList.toggle('inactive');
+            return false;
         },
 
         destroy: function(o) {
@@ -125,10 +154,21 @@
         },
 
         render: function() {
-          var html = '<span>' + this.model.get('alias') + '</span>';
-          html += '<a class="button delete" href="#" title="Delete this alias">X</a>';
-          $(this.el).html(html);
-          return this;
+                    console.debug(this.model);
+            var alias = this.model.get('alias');
+            var cls = this.model.get('status') || 'active';
+            var html = '<span>' + alias + '</span>';
+            html += '<span="controls"><button class="disable" title="Toggle availability">';
+            html += disable_labels[cls != 'active'];
+            html += '</button>';
+            html += '<button class="delete" title="Delete this alias">X</button>';
+            console.debug(this.el, $(this.el));
+            this.el.id = alias;
+            if (cls != 'active') {
+                  this.el.classList.add(cls);
+            }
+            $(this.el).html(html);
+            return this;
         }
       });
 
@@ -143,7 +183,6 @@
           this.aliases.bind('add', this.append, this);
           this.aliases.bind('logout', this.logout, this);
           console.debug('bound logout');
-          console.debug(this.aliases.fetch());
           this.aliases.fetch();
         },
 
