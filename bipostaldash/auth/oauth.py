@@ -77,7 +77,6 @@ class OAuth(object):
     def get_user_id(self, request):
         # Only use GET Params for OAuth.
         params = request.GET
-        import pdb; pdb.set_trace()
         session = request.session
 
         # Is this an OAuth request?

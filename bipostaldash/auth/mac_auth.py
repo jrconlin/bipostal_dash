@@ -5,6 +5,8 @@ import logging
 import random
 import re
 import string
+import time
+import urllib
 
 
 class NonceRing(object):
@@ -31,13 +33,7 @@ nonces = NonceRing()
 
 
 class MacAuthException(Exception):
-
-    def __init__(self,  msg):
-        self.msg = msg
-
-    def __str__(self):
-        return repr(self.msg)
-
+    pass
 
 class MacAuth(object):
     """ Absolutely minimal OAuth function to validate args and return
@@ -62,7 +58,7 @@ class MacAuth(object):
                 args.get('nonce'),
                 args.get('method').upper(),
                 args.get('request_uri'),
-                args.get('host'),
+                args.get('host').split(':')[0],
                 str(args.get('port','80')),
                 args.get('ext','')]
         # remember to include the final "\n".
@@ -80,21 +76,28 @@ class MacAuth(object):
         headers = request.headers
         session = request.session
         if "Authorization" not in headers:
-            logging.error('No Auth header present. Failing')
-            raise MacAuthException('No Authorization Header present')
+            err = 'No Auth header present. Failing'
+            logging.error(err)
+            raise MacAuthException(err)
         auth = headers.get("Authorization")
         if auth[:3].upper() != 'MAC':
-            logging.error('Auth is not MAC. Failing')
-            raise MacAuthException('Authorization is not MAC Auth type')
+            err = 'Auth Header is not MAC. Failing'
+            logging.error(err)
+            raise MacAuthException(err)
         mac_key = request.session.get('keys',
                 {}).get('mac_key', None);
         if mac_key is None:
-            logging.error('Missing MAC key. How did we get here?')
-            raise MacAuthException('No MAC key defined')
+            err = "Missing MAC key. Possibly result of uninitialized call. Failing"
+            logging.error(err)
+            raise MacAuthException(err)
         items = {}
         for (key, value) in re.findall('(\w+)="([^"]+)"', auth):
             items[key] = value
         request_uri = request.path_info
+        if nonces.contains(items['nonce']):
+           logging.error("Duplicate Nonce, Replay? Failing")
+           return False
+        nonces.add(items['nonce'])
         if request.query_string:
             request_uri += '?' + request.query_string
         nrs = self.getNormalizedRequestString(
@@ -105,18 +108,47 @@ class MacAuth(object):
             host=request.host,
             port=str(self._port or request.server_port),
             ext=items.get('ext', ''))
-        logging.info('Normalized: "%s"' % nrs)
+        logging.info('Validate Normalized: "%s"' % nrs)
         macMethod = self.validMacMethods[session.get('auth.mac_type',
                 'mac-sha-1')]
         testSig = base64.b64encode(hmac.new(mac_key, nrs, macMethod).digest())
         logging.info('testing "%s" =? "%s"' % (testSig, items.get('mac')))
         return self.verifySig(testSig, items.get('mac'))
 
+    def sign(self, access_token, mac_key, request, **kw):
+        ts = str(kw.get('ts', int(time.time())))
+        nonce = kw.get('nonce', self.genNonce())
+        ext = urllib.urlencode(kw.get('ext', ''))
+        nrs = self.getNormalizedRequestString(
+            ts=ts,
+            nonce=nonce,
+            method=kw.get('method', 'GET').upper(),
+            request_uri=request.path_info or '/',
+            host=request.host or 'localhost',
+            port=kw.get('port', request.server_port or '80'),
+            ext=ext)
+        logging.info('Validate Normalized: "%s"' % nrs)
+        macMethod = self.validMacMethods[kw.get('mac_type', 'mac-sha-1')]
+        sig = base64.b64encode(hmac.new(mac_key, nrs, macMethod).digest())
+        logging.info('Signed as "%s"' % sig)
+        return {'items': {
+                   'id': access_token,
+                   'ts': ts,
+                    'nonce': nonce,
+                    'ext': ext,
+                    'mac': sig },
+                 'sbs': nrs,
+                 'header': 
+                    'MAC id="%s" ts="%s" nonce="%s" ext="%s" mac="%s"' % (
+                        access_token, ts, nonce, ext, sig)}
+
     def get_user_id(self, request):
         if self.validate(request):
             return request.session.get('uid')
         else:
-            raise MacAuthException('invalid MAC Auth');
+            err = 'Invalid MAC, refusing user ID request.'
+            logging.error(err)
+            raise MacAuthException(err)
 
     def header(self, error=None):
         response = 'WWW-Authenticate: MAC'
@@ -133,3 +165,27 @@ class MacAuth(object):
                 'mac_algorithm': config.get('auth.mac_type', 'mac-sha-1'),
                 'expires_in': config.get('auth.expry', 0),
                 }
+
+
+if __name__ == '__main__':
+    class DummyRequest(dict):
+        def __init__(self, **kw):
+            self.path_info = '/'
+            self.host = kw.get('host','localhost')
+            self.server_port = kw.get('port', '80')
+            self.method = kw.get('method', 'GET')
+            self.query_string = None
+            self.headers = {}
+            self.session = {}
+       
+
+    test = MacAuth()
+    request = DummyRequest(host='example.org')
+    request.session = {'keys': {'access_token': 'access',
+            'mac_key': 'secret'}}
+    res = test.sign(request.session.get('keys').get('access_token'), 
+            request.session.get('keys').get('mac_key'), request)
+    request.headers['Authorization'] = res.get('header')
+    if (not test.validate(request)):
+        print "crap"
+    print repr(res)
