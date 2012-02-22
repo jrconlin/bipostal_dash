@@ -42,6 +42,7 @@ class MacAuth(object):
     validMacMethods = { 'mac-sha-1': hashlib.sha1,
             'mac-sha-256': hashlib.sha256}
     _port = None
+    default_expry = 1
 
     def __init__(self, **kw):
         if ('server.port' in kw):
@@ -75,6 +76,7 @@ class MacAuth(object):
     def validate(self, request):
         headers = request.headers
         session = request.session
+        config = request.registry.get('config', {})
         if "Authorization" not in headers:
             err = 'No Auth header present. Failing'
             logging.error(err)
@@ -90,17 +92,26 @@ class MacAuth(object):
             err = "Missing MAC key. Possibly result of uninitialized call. Failing"
             logging.error(err)
             raise MacAuthException(err)
+        # Parse the exchanged elements from the MAC Auth line
         items = {}
         for (key, value) in re.findall('(\w+)="([^"]+)"', auth):
             items[key] = value
         request_uri = request.path_info
+        # Check that the nonce is unique
         if nonces.contains(items['nonce']):
            logging.error("Duplicate Nonce, Replay? Failing")
            return False
         nonces.add(items['nonce'])
+        # Check the timestamp against the known expry
+        expry = int(session.get('expry', 
+                config.get('auth.expry', self.default_expry)))
+        if (expry and (int(time.time()) > expry + int(items['ts']))):
+            logging.error("Expired Timestamp. Failing")
+            return False
+        # Gauntlet cleared, check the sbs.
         if request.query_string:
             request_uri += '?' + request.query_string
-        nrs = self.getNormalizedRequestString(
+        sbs = self.getNormalizedRequestString(
             ts=items.get('ts'),
             nonce=items.get('nonce'),
             method=request.method,
@@ -108,10 +119,10 @@ class MacAuth(object):
             host=request.host,
             port=str(self._port or request.server_port),
             ext=items.get('ext', ''))
-        logging.info('Validate Normalized: "%s"' % nrs)
+        logging.info('Validate Normalized: "%s"' % sbs)
         macMethod = self.validMacMethods[session.get('auth.mac_type',
                 'mac-sha-1')]
-        testSig = base64.b64encode(hmac.new(mac_key, nrs, macMethod).digest())
+        testSig = base64.b64encode(hmac.new(mac_key, sbs, macMethod).digest())
         logging.info('testing "%s" =? "%s"' % (testSig, items.get('mac')))
         return self.verifySig(testSig, items.get('mac'))
 
