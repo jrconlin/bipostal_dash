@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import string
+import time
 
 from bipostaldash.auth.default import DefaultAuth
 from cornice import Service
@@ -24,6 +25,9 @@ user = Service(name='user', path='/user/',
 
 login_service = Service(name='login', path='/',
                     description='Login to service')
+
+stime = Service(name='stime', path='/time',
+                description='Current server time')
 
 logger = logging.getLogger(__file__)
 
@@ -223,7 +227,7 @@ def login(request):
             repr(keys))
         session['keys'] = keys
     if 'javascript' in request.response.content_type:
-        response = auth.getResponse(keys, config)
+        response = session.get('keys');
     else:
         template = Template(filename=os.path.join('bipostaldash',
                 'templates', 'mainpage.mako'))
@@ -262,3 +266,6 @@ def update_user(request):
         logger.error('Could not update record: [%s]' % repr(e))
         raise
 
+@stime.get()
+def stime(request):
+    return {'time': int(time.time())}

@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <%
+    import time
+
     user = pageargs.get('user', 'User')
     request = pageargs.get('request', {'registry': {}})
     keys = pageargs.get('keys', {
         'access_token': request.registry.get('config', 
             {}).get('auth.mac.access_token', ''),
         'secret': request.registry.get('config', 
-            {}).get('auth.mac.mac_key', '')})
+        {}).get('auth.mac.mac_key', ''),
+        'server_time': int(time.time())})
 
 %>
 <html>
@@ -92,8 +95,11 @@
             }
 
             // add the signature
+            var skew =Math.floor(new Date().getTime() / 1000) - ${keys.get('server_time', int(time.time()))};
+            //console.debug('Skew = ' + skew);
             var macauth = new MACAuth({'access_token': '${keys.get('access_token')}', 
                     'mac_key': '${keys.get('mac_key')}',
+                    'skew': skew,
                     'port': '80'}).setAction(params.type).setFromURL(params.url).sign();
             if (!params.headers) {
                 params.headers = {'Authorization': macauth.header}
@@ -140,21 +146,21 @@
                         }
                     }
                 )
-            console.debug(ret);
+            //console.debug(ret);
            //     this.el.classList.toggle('inactive');
             return false;
         },
 
         destroy: function(o) {
             $(this.el).remove();
-            console.debug(o);
-            console.debug(this);
+            //console.debug(o);
+            //console.debug(this);
           this.model.destroy();
           return false;
         },
 
         render: function() {
-                    console.debug(this.model);
+            //console.debug(this.model);
             var alias = this.model.get('alias');
             var cls = this.model.get('status') || 'active';
             var html = '<span>' + alias + '</span>';
@@ -162,7 +168,7 @@
             html += disable_labels[cls != 'active'];
             html += '</button>';
             html += '<button class="delete" title="Delete this alias">X</button>';
-            console.debug(this.el, $(this.el));
+            //console.debug(this.el, $(this.el));
             this.el.id = alias;
             if (cls != 'active') {
                   this.el.classList.add(cls);
@@ -176,13 +182,13 @@
         el: $('body'),
 
         initialize: function() {
-            console.debug('initialize');
-            this.aliases = new Aliases;
-            console.debug('binding');
+          //console.debug('initialize');
+          this.aliases = new Aliases;
+          //console.debug('binding');
           this.aliases.bind('reset', this.render, this);
           this.aliases.bind('add', this.append, this);
           this.aliases.bind('logout', this.logout, this);
-          console.debug('bound logout');
+          //console.debug('bound logout');
           this.aliases.fetch();
         },
 
@@ -209,9 +215,11 @@
 
         newAlias: function() {
             var self = this;
-            console.debug('new_alias');          
+            //console.debug('new_alias');          
             var audience = $('#audience')[0].value;
+            var skew = Math.floor(new Date().getTime() / 1000) - ${keys.get('server_time', int(time.time()))};
             var macauth = new MACAuth({'access_token': '${keys.get('access_token')}', 
+                    'skew': skew,
                     'mac_key': '${keys.get('mac_key')}'}).setAction('POST').setFromURL(this.aliases.url).sign();
             $.ajax({url:this.aliases.url, 
                     type: 'POST',
@@ -226,7 +234,9 @@
 
         logout: function () {
             var self = this;
+            var skew = Math.floor(new Date().getTime() / 1000) - ${keys.get('server_time', int(time.time()))};
             var macauth = new MACAuth({'access_token': '${keys.get('access_token')}', 
+                    'skew': skew,
                     'mac_key': '${keys.get('mac_key')}'}).setAction('DELETE').setFromURL('/').sign();
             $.ajax({url: '/',
                     type: 'DELETE',
@@ -244,9 +254,7 @@
         }
       });
 
-    console.debug('starting');
       window.App = new AppView;
-      console.debug('done');
 
     </script>
   </body>

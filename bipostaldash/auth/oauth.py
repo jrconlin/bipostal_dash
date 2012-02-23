@@ -4,6 +4,7 @@ import hmac
 import logging
 import re
 import urllib2
+import time
 
 
 class NonceRing(object):
@@ -133,12 +134,13 @@ class OAuth(object):
         logging.error("invalid signature")
         return None
 
-    def gen_keys(self, access, secret, refresh, config):
+    def gen_keys(self, access, secret, refresh, config, **kw):
         return {
                 'oauth_consumer_key': access,
                 'shared_secret': secret,
                 'refresh_token': refresh,
                 'token_type': 'oauth',
+                'server_time': int(time.time())
                 }
 
     def header(self, error=None):

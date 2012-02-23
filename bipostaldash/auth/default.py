@@ -1,5 +1,5 @@
 from pyramid.security import authenticated_userid
-
+import time
 
 class DefaultAuth(object):
 
@@ -32,3 +32,11 @@ class DefaultKeyStore(object):
 
     def get_keys(self, request):
         return request.session.get('keys', None)
+
+    def gen_keys(self, access, secret, config, **kw):
+        return {
+                'token_type': 'none',
+                'access_token': access,
+                'server_time': int(time.time()),
+                }
+                

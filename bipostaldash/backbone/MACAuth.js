@@ -163,8 +163,6 @@ if (MACAuth === undefined)
                         args['sbs'], 
                         args['mac_key'], 
                         {asString: true}));
-            console.debug("=======");
-            console.debug(args);
             return {
                 signature: args['mac'],
                 sbs: args['sbs'],
@@ -208,6 +206,9 @@ if (MACAuth === undefined)
 
         self._getTimestamp = function() {
             var ts = Math.floor((new Date()).getTime()/1000);
+            if (self._args['skew'] != undefined) {
+                ts + self._args['skew'];
+            }
             return this._timestamp = ts;
         };
 

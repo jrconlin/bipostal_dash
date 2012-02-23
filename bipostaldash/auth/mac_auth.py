@@ -119,11 +119,11 @@ class MacAuth(object):
             host=request.host,
             port=str(self._port or request.server_port),
             ext=items.get('ext', ''))
-        logging.info('Validate Normalized: "%s"' % sbs)
+        logging.debug('Validate Normalized: "%s"' % sbs)
         macMethod = self.validMacMethods[session.get('auth.mac_type',
                 'mac-sha-1')]
         testSig = base64.b64encode(hmac.new(mac_key, sbs, macMethod).digest())
-        logging.info('testing "%s" =? "%s"' % (testSig, items.get('mac')))
+        logging.debug('testing "%s" =? "%s"' % (testSig, items.get('mac')))
         return self.verifySig(testSig, items.get('mac'))
 
     def sign(self, access_token, mac_key, request, **kw):
@@ -138,10 +138,10 @@ class MacAuth(object):
             host=request.host or 'localhost',
             port=kw.get('port', request.server_port or '80'),
             ext=ext)
-        logging.info('Validate Normalized: "%s"' % nrs)
+        logging.debug('Validate Normalized: "%s"' % nrs)
         macMethod = self.validMacMethods[kw.get('mac_type', 'mac-sha-1')]
         sig = base64.b64encode(hmac.new(mac_key, nrs, macMethod).digest())
-        logging.info('Signed as "%s"' % sig)
+        logging.debug('Signed as "%s"' % sig)
         return {'items': {
                    'id': access_token,
                    'ts': ts,
@@ -167,7 +167,7 @@ class MacAuth(object):
             response += 'error="%s"' % error.replace('"', '\\"')
         return response
 
-    def gen_keys(self, access, secret, refresh, config):
+    def gen_keys(self, access, secret, refresh, config, **kw):
         return {
                 'token_type': 'mac',
                 'access_token': access,
@@ -175,6 +175,7 @@ class MacAuth(object):
                 'refresh_token': refresh,
                 'mac_algorithm': config.get('auth.mac_type', 'mac-sha-1'),
                 'expires_in': config.get('auth.expry', 0),
+                'server_time': int(time.time()),
                 }
 
 
