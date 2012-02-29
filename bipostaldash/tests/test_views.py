@@ -55,7 +55,7 @@ class ViewTest(unittest2.TestCase):
 
     def test_add_alias(self):
         response = views.add_alias(self.request)
-        eq_(set(response.keys()), set(['email', 'alias', 'origin', 'status']))
+        eq_(set(response.keys()), set(['email', 'alias', 'user', 'origin', 'status']))
         eq_(response['email'], self.email)
 
         eq_(views.list_aliases(self.request),
@@ -65,14 +65,18 @@ class ViewTest(unittest2.TestCase):
         request = JSONRequest(post=json.dumps({'alias': 'x@y.com',
             'audience': self.audience}))
         response = views.add_alias(request)
-        eq_(response, {'email': self.email,
-                       'origin': self.audience,
+        eq_(response, {
                        'alias': 'x@y.com',
-                       'status': 'active'})
+                       'status': 'active',
+                       'email': self.email,
+                       'user': self.email,
+                       'origin': self.audience,
+                       })
 
         eq_(views.list_aliases(self.request),
             {'email': self.email,
              'aliases': [{'email': self.email,
+                          'user': self.email,
                           'origin': self.audience,
                           'alias': 'x@y.com',
                           'status': 'active'}]})
@@ -96,6 +100,7 @@ class ViewTest(unittest2.TestCase):
                 'audience': self.audience}
         response = views.get_alias(self.request)
         eq_(response, {'email': self.email,
+                       'user': self.email,
                        'alias': alias,
                        'origin': self.audience,
                        'status': 'active'})
@@ -119,6 +124,7 @@ class ViewTest(unittest2.TestCase):
                 'audience': self.audience}
         response = views.delete_alias(self.request)
         eq_(response, {'email': self.email,
+                       'user': self.email,
                        'alias': alias,
                        'origin': self.audience,
                        'status': 'deleted'})

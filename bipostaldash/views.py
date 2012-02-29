@@ -110,7 +110,8 @@ def add_alias(request):
     if not re.match(EMAIL_RE, alias) or db.resolve_alias(alias):
         raise http.HTTPBadRequest()
 
-    rv = db.add_alias(user=email, alias=alias, origin=audience)
+    rv = db.add_alias(email=email, user=email, 
+            alias=alias, origin=audience)
     logger.info('New alias for %s.', email)
     return rv
 

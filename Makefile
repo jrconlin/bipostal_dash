@@ -48,9 +48,7 @@ all:	build
 
 build:
 	$(VIRTUALENV) --no-site-packages .
-	$(INSTALL) MoPyTools
-	$(INSTALL) nose
-	$(INSTALL) WebTest
+	$(INSTALL) -r dev-reqs.txt 
 	$(BUILDAPP) -c $(CHANNEL) $(PYPIOPTIONS) $(DEPS)
 
 update:
