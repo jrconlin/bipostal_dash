@@ -15,7 +15,7 @@ requires = ['cornice', 'pyramid_whoauth', 'mozsvc',
 
 
 setup(name='bipostaldash',
-      version='0.2',
+      version='0.5',
       description='bipostaldash',
       long_description=README + '\n\n' +  CHANGES,
       classifiers=[
