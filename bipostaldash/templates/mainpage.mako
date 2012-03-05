@@ -23,8 +23,10 @@
       <h1>Manage your BrowserID Aliases</h1>
       <h2>Primary Address: <span id="email">${user}</span></h2>
       </hgroup>
-      <label for="audience">Audience:</label>
-      <input name="audience" id="audience" value="bipostal.diresworb.org">
+      <span id="aud">
+          <label for="audience">Audience:</label>
+          <input name="audience" id="audience" value="bipostal.diresworb.org">
+      </span>
       <button id="new">Get a new alias.</button>
     <ul id="aliases">
     </ul>

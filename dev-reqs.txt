@@ -1,15 +1,12 @@
 MoPyTools
 nose
 WebTest
+mako
 pyramid_beaker
 redis == 2.4.10
 mock == 0.7.2
 pycurl
 sqlalchemy
-# memcached
-# mysql-server
-# mysql-client
-# libmysqlclient-dev
 -e git://github.com/jrconlin/bipostal_store#egg=bipostal_storage
 -e git://github.com/mozilla-services/mozservices.git#egg=mozsvc
 -e git://github.com/mozilla-services/pyramid_whoauth.git#egg=pyramid_whoauth
