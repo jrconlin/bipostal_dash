@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <script>
+    var xhr;
+    if (window.XMLHttpRequest) {
+        xhr = new XMLHttpRequest();
+    } else if (window.ActiveXObject) {
+       xhr = new ActiveXObject("Microsoft.XMLHTTP");
+   }
+
+    window.addEventListener('message', function(event) {
+        console.debug(event.origin);
+        xhr.setRequestHeader('Content-Type', 'application/javascript');
+        var cmd = JSON.parse(event.data);
+        switch (cmd.cmd) {
+            case 'loggedin':
+                xhr.open('GET', '/user/');
+                xhr.onreadystatechange = function(resp) {
+                    var reply;
+                    if (resp.status == 200) {
+                        reply = state.currentTarget;
+                    } else {
+                        reply = false;
+                    }
+                    event.source.postMessage(JSON.stringify(reply),
+                           event.origin);
+               };
+               xhr.send();
+               break;
+
+            default:
+                event.source.postMessage(JSON.stringify(false), 
+                    event.origin);
+                break;
+        }
+    }, false);
+</script>
+</body>
+</html>
