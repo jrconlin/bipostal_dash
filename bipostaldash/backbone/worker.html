@@ -21,8 +21,9 @@
                     if (resp.status == 200) {
                         reply = state.currentTarget;
                     } else {
-                        reply = false;
+                        reply = {'status': false};
                     }
+                    reply['callback_id'] = cmd.callback_id;
                     event.source.postMessage(JSON.stringify(reply),
                            event.origin);
                };
@@ -30,7 +31,8 @@
                break;
 
             default:
-                event.source.postMessage(JSON.stringify(false), 
+                event.source.postMessage(JSON.stringify({'status': false,
+                    'callback_id': cmd.callback_id}), 
                     event.origin);
                 break;
         }

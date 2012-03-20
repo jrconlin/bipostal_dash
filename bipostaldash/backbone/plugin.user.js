@@ -12,50 +12,73 @@ var bp = new function() {
     var data = {
         'siteName': document.getElementById('sitename').innerHTML,
         'referrer': document.referrer,
+        'worker': undefined,
         'cb': {},
     };
 
+    this.rnd = function(maxRand) {
+        return Math.floor(Math.random() * maxRand);
+    }
     
-    this.sendCmd(uri, callback) {
-        var id = 'bp_' + Math.floor(Math.random() * 1000000)l
-        var path = host + uri;
-        (function(id, path, callback) {
-            this.data.cb[id] = function(event) {
-                callback(event, target);
-                k = document.getElementById(id);
-                k.parentNode.removeChild(k);
-                delete(cb[id]);
+    this.sendCmd = function(uri, args) {
+        id = this.rnd(1000000);
+        if (args == undefined) {
+            args = {};
+        }
+        args['callback_id'] = 'c_' + id;
+        try {
+            this.data.cb[args.callback_id] = {'success': args.success,
+                'error': args.error};
+            this.data.worker.postMessage(JSON.stringify(
+                    {'cmd': uri, 
+                     'args': args}),
+                this.host);
+        } catch (e)  { // ...if e instanceof FooError 
+            console.error('Exception: ', e);
+            if (this.data.cb[args.callback_id].error) {
+                this.data.cb[args.callback_id].error({'exception': e});
             }
-            scr = document.createElement('script');
-            scr.id = id;
-            prefix = '?';
-            if (path.indexof('?' != -1) {
-                prefix = '&';
-            }
-            scr.src = path + prefix + 'callback=bp.data.cb.' + id;
-            document.getElementById('scripts').appendChild(scr);
-        }) (id, path, callback)
+            delete this.data.cb[args.callback_id];
+        }
     }
 
-    this.isLoggedIn = function() {
-        
+    this.recvMsg = function(event){
+        console.debug(event.origin);
+        try {
+            rep = JSON.parse(event.data);
+            if (rep.callback_id) {
+                callback = this.data.cb[rep.callback_id];
+                delete this.data.cb[rep.callback_id];
+                delete rep.callback_id;
+                if (callback && callback.success) {
+                    return callback.success(rep);
+                }
+            }
+            console.debug('No callback present');
+        } catch (e) {
+            console.error('Exception: ', e);
+        }
     }
 
 
     this.init = function() {
         if (document.getElementById('scripts') == undefined) {
             var scr = document.createElement('div');
-            document.getElementById('body')[0].appendChild(scr);
+            document.getElementsByTagName('body')[0].appendChild(scr);
         }
         var worker = document.createElement('iframe');
-        worker.href = host + '/worker.js
-
+        worker.href = host + '/worker.html';
+        worker.style.display='none';
+        worker.addEventListener('message', this.recvMessage, false);
+        document.getElementByTagName('body')[0].appendChild(worker);
+        this.data.worker = worker;
     }
 
     this.init();
 
     return {
         'data': this.data,
+        'sendCmd': this.sendCmd,
     }
 } ();
 
