@@ -7,11 +7,12 @@
         xhr = new XMLHttpRequest();
     } else if (window.ActiveXObject) {
        xhr = new ActiveXObject("Microsoft.XMLHTTP");
-   }
+    }
 
     window.addEventListener('message', function(event) {
         console.debug(event.origin);
         xhr.setRequestHeader('Content-Type', 'application/javascript');
+        document.getElementById('m').innerHTML = event.data;
         var cmd = JSON.parse(event.data);
         switch (cmd.cmd) {
             case 'loggedin':
@@ -38,5 +39,6 @@
         }
     }, false);
 </script>
+<div id="m"></div>
 </body>
 </html>

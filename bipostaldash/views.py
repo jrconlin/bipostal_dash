@@ -20,6 +20,9 @@ aliases = Service(name='aliases', path='/alias/',
 alias_detail = Service(name='alias-detail', path='/alias/{alias}',
                        description='Manage a single alias.')
 
+origin = Service(name='origin', path='/origin/{origin}',
+                    description='Fetch info for an origin')
+
 user = Service(name='user', path='/user/', 
                   description='Get user info')
 
@@ -167,6 +170,22 @@ def change_alias(request):
     db = request.registry['storage']
     alias = request.matchdict['alias']
     rv = db.set_status_alias(user=email, alias=alias, status=status)
+    return rv
+
+
+@origin.get()
+def get_alias_for_origin(request):
+    """ Get the aliases for a user for an origin """
+    try:
+        auth = request.registry.get('auth', DefaultAuth)
+        email = auth.get_user_id(request)
+    except Exception, e:
+        logging.error(repr(e))
+        raise http.HTTPUnauthorized()
+    db = request.registry['storage']
+    origin = request.matchdict['origin']
+    rv = db.get_alias_for_origin(user=email, 
+            origin=origin)
     return rv
 
 

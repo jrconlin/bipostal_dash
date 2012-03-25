@@ -24,6 +24,12 @@ Getting Started
 
     paster serve etc/bipostaldash-dev.ini
 
+Special Dependencies
+--------------------
+Please note the following system dependencies:
+
+* libssl v. 1.0.0 +
+
 
 Run the Server
 --------------

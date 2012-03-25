@@ -1,6 +1,6 @@
 import logging
 import urllib2
-import vep
+import browserid 
 
 
 class BrowserIDAuth(object):
@@ -31,7 +31,7 @@ class BrowserIDAuth(object):
             if assertion is None:
                 return None
         try:
-            data = vep.verify(assertion, audience)
+            data = browserid.verify(assertion, audience)
             return data['email']
         except Exception, e:
             logging.info("Bad assertion [%s]" % repr(e))

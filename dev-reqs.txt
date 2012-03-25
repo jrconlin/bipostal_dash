@@ -14,4 +14,4 @@ sqlalchemy
 -e git://github.com/mozilla-services/pyramid_ipauth.git#egg=pyramid_ipauth
 -e git://github.com/mozilla-services/pyramid_multiauth.git#egg=pyramid_multiauth
 -e git://github.com/mozilla-services/repoze.who.plugins.browserid.git#egg=repoze.who.plugins.browserid
--e git://github.com/mozilla/PyVEP.git#egg=pyvep
+-e git://github.com/mozilla/PyBrowserID.git#egg=pybrowserid
