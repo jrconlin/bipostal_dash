@@ -38,9 +38,10 @@ class ViewTest(unittest2.TestCase):
         self.config = testing.setUp()
         self.email = 'email@example.com'
         self.audience = 'example.com'
+        self.alias = '123abc@example.com'
         self.config.testing_securitypolicy(userid=self.email, permissive=True)
         self.request = JSONRequest(post=json.dumps({'alias':
-                '123abc@example.com',
+                self.alias,
             'audience': self.audience}))
         self.request.registry['storage'] = mem.Storage()
         # Default Auth:
@@ -123,10 +124,9 @@ class ViewTest(unittest2.TestCase):
         alias1 = views.add_alias(self.request)
         self.request.matchdict = {'origin':
                 self.audience}
-        import pdb; pdb.set_trace();
         response = views.get_alias_for_origin(self.request)
-        request.matchdict = None
-        print response
+        eq_(alias1, response[0])
+        self.request.matchdict = None
         
 
     def test_delete_alias(self):

@@ -9,6 +9,7 @@ class BrowserIDAuth(object):
 
     def __init__(self,
             **kw):
+        self.bid = browserid;
         pass
 
     def create_user(self, assertion=None, **kw):
@@ -31,7 +32,7 @@ class BrowserIDAuth(object):
             if assertion is None:
                 return None
         try:
-            data = browserid.verify(assertion, audience)
+            data = self.bid.verify(assertion, audience)
             return data['email']
         except Exception, e:
             logging.info("Bad assertion [%s]" % repr(e))
