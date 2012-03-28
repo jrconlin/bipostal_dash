@@ -4,7 +4,7 @@
 
 * git
 
-* svn
+* svn (mercurial)
 
 * nginx
 
@@ -18,7 +18,15 @@
 
 * make
 
+* swig
+
 * mysql\_server
+
+* libcurl-dev
+
+* libmysql-dev
+
+* python-dev
 
 * PostFix (or any other milter compatible MTA)
 
