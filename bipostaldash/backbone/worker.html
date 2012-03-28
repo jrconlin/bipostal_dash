@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <script>
+    var xhr;
+    if (window.XMLHttpRequest) {
+        xhr = new XMLHttpRequest();
+    } else if (window.ActiveXObject) {
+       xhr = new ActiveXObject("Microsoft.XMLHTTP");
+    }
+
+    window.addEventListener('message', function(event) {
+        console.debug(event.origin);
+        xhr.setRequestHeader('Content-Type', 'application/javascript');
+        document.getElementById('m').innerHTML = event.data;
+        var cmd = JSON.parse(event.data);
+        switch (cmd.cmd) {
+            case 'loggedin':
+                xhr.open('GET', '/user/');
+                xhr.onreadystatechange = function(resp) {
+                    var reply;
+                    if (resp.status == 200) {
+                        reply = state.currentTarget;
+                    } else {
+                        reply = {'status': false};
+                    }
+                    reply['callback_id'] = cmd.callback_id;
+                    event.source.postMessage(JSON.stringify(reply),
+                           event.origin);
+               };
+               xhr.send();
+               break;
+
+            default:
+                event.source.postMessage(JSON.stringify({'status': false,
+                    'callback_id': cmd.callback_id}), 
+                    event.origin);
+                break;
+        }
+    }, false);
+</script>
+<div id="m"></div>
+</body>
+</html>

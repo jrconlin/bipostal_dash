@@ -118,6 +118,17 @@ class ViewTest(unittest2.TestCase):
                        'aliases': [alias1, alias2],
                        })
 
+
+    def test_alias_for_origin(self):
+        alias1 = views.add_alias(self.request)
+        self.request.matchdict = {'origin':
+                self.audience}
+        import pdb; pdb.set_trace();
+        response = views.get_alias_for_origin(self.request)
+        request.matchdict = None
+        print response
+        
+
     def test_delete_alias(self):
         alias = views.add_alias(self.request)['alias']
         self.request.matchdict = {'alias': alias,
