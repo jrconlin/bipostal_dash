@@ -76,7 +76,7 @@ class ViewTest(unittest2.TestCase):
 
         eq_(views.list_aliases(self.request),
             {'email': self.email,
-             'aliases': [{'email': self.email,
+                'aliases': [{'email': self.email,
                           'user': self.email,
                           'origin': self.audience,
                           'alias': 'x@y.com',
@@ -125,7 +125,7 @@ class ViewTest(unittest2.TestCase):
         self.request.matchdict = {'origin':
                 self.audience}
         response = views.get_alias_for_origin(self.request)
-        eq_(alias1, response[0])
+        eq_(alias1, response.get('results')[0])
         self.request.matchdict = None
         
 
@@ -174,11 +174,12 @@ def test_new_alias(urandom_mock):
     request.environ['HTTP_HOST'] = 'browserid.org'
     #alias should be lower case, even if the urandom picked upper.
     eq_(views.new_alias(request),
-            '%s@browserid.org' % result_val)
+            {'alias': '%s@browserid.org' % result_val})
     # Cornice currently faults on passing domain.
     request.environ['HTTP_HOST'] = 'woo.com'
+    
     eq_(views.new_alias(request),
-            '%s@woo.com' % result_val)
+            {'alias': '%s@woo.com' % result_val})
 
 
 class AppTest(unittest2.TestCase):
@@ -186,7 +187,7 @@ class AppTest(unittest2.TestCase):
     def setUp(self):
         # Grab the development ini file.
         p = os.path
-        ini = p.join(p.dirname(__file__), '../../etc/bipostaldash-dev.ini')
+        ini = p.join(p.dirname(__file__), '../../etc/bipostaldash.ini')
         app = bipostaldash.main({'__file__': p.abspath(ini)})
         self.testapp = webtest.TestApp(app)
 

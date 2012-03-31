@@ -29,8 +29,8 @@ user = Service(name='user', path='/user/',
 login_service = Service(name='login', path='/',
                     description='Login to service')
 
-stime = Service(name='stime', path='/time',
-                description='Current server time')
+statics = Service(name='statics', path='/s/{cmd}',
+                description='Catch-all semi-static services')
 
 logger = logging.getLogger(__file__)
 
@@ -64,8 +64,10 @@ def new_alias(request, root=None, domain=None, prefix=None, **kw):
         prefix = config.get('global.shard',None)
         if prefix is not None:
             prefix = str(prefix).rjust(config.get('global.shard_pad', 3), '0')
-    return make_alias(domain=domain, prefix=prefix)
-
+    reply = {'alias': make_alias(domain=domain, prefix=prefix)}
+    if (request.params.get('callback')):
+        reply['callback'] = request.params.get('callback')
+    return reply
 
 @aliases.get()
 def list_aliases(request):
@@ -77,7 +79,11 @@ def list_aliases(request):
             logger.error('No email found for list request.')
             raise http.HTTPUnauthorized()
         aliases = db.get_aliases(user=email) or []
-        return {'email': email, 'aliases': aliases}
+        reply = {'email': email, 'aliases': aliases}
+        import pdb; pdb.set_trace();
+        if (request.params.get('callback')):
+            reply['callback'] = request.params.get('callback')
+        return reply
     except Exception, e:
         logger.error(repr(e))
         return http.HTTPForbidden()
@@ -102,7 +108,8 @@ def add_alias(request):
             alias = request.json_body.get('alias', None)
             audience = request.json_body.get('audience', None)
             if alias is None:
-                alias = new_alias(request, domain=audience)
+                alias = new_alias(request, 
+                        domain=audience).get('alias')
             if audience is None and '@' in alias:
                 (token, audience) = alias.split('@')
             if alias is None and audience is not None:
@@ -113,10 +120,12 @@ def add_alias(request):
     if not re.match(EMAIL_RE, alias) or db.resolve_alias(alias):
         raise http.HTTPBadRequest()
 
-    rv = db.add_alias(email=email, user=email, 
+    reply = db.add_alias(email=email, user=email, 
             alias=alias, origin=audience)
     logger.info('New alias for %s.', email)
-    return rv
+    if (request.params.get('callback')):
+        reply['callback'] = request.params.get('callback')
+    return reply
 
 
 @alias_detail.get()
@@ -127,8 +136,10 @@ def get_alias(request):
     audience = request.matchdict.get('audience')
     if audience is None and '@' in alias:
         (token, audience) = alias.split('@')
-    rv = db.resolve_alias(alias=alias, origin=audience)
-    return rv
+    reply = db.resolve_alias(alias=alias, origin=audience)
+    if (request.params.get('callback')):
+        reply['callback'] = request.params.get('callback')
+    return reply
 
 
 @alias_detail.delete()
@@ -145,9 +156,11 @@ def delete_alias(request):
     audience = None;
     if 'audience' in request.matchdict:
         audience = request.matchdict['audience']
-    rv = db.delete_alias(user=email, alias=alias, origin=audience)
+    reply = db.delete_alias(user=email, alias=alias, origin=audience)
     logger.info('Deleting alias for %s.', email)
-    return rv
+    if (request.params.get('callback')):
+        reply['callback'] = request.params.get('callback')
+    return reply
 
 
 @alias_detail.put()
@@ -169,8 +182,10 @@ def change_alias(request):
         return http.HTTPForbidden()
     db = request.registry['storage']
     alias = request.matchdict['alias']
-    rv = db.set_status_alias(user=email, alias=alias, status=status)
-    return rv
+    reply = db.set_status_alias(user=email, alias=alias, status=status)
+    if (request.params.get('callback')):
+        reply['callback'] = request.params.get('callback')
+    return reply
 
 
 @origin.get()
@@ -184,9 +199,11 @@ def get_alias_for_origin(request):
         raise http.HTTPUnauthorized()
     db = request.registry['storage']
     origin = request.matchdict['origin']
-    rv = db.get_alias_for_origin(user=email, 
-            origin=origin)
-    return rv
+    reply = {'results': db.get_alias_for_origin(user=email, 
+            origin=origin)}
+    if (request.params.get('callback')):
+        reply['callback'] = request.params.get('callback')
+    return reply
 
 
 def _gen_keys(auth, config):
@@ -201,6 +218,7 @@ def _gen_keys(auth, config):
 @login_service.delete()
 def logout(request):
     """ Log the user out """
+    reply = {'status': False}
     try:
         session = request.session
         auth = request.registry.get('dash_auth', DefaultAuth)
@@ -209,11 +227,12 @@ def logout(request):
             session['uid'] = None
             session['keys'] = None
             session.save()
-            return True
+            reply = {'staus': True }
     except Exception, e:
         logging.error(repr(e))
-        return False
-
+    if (request.params.get('callback')):
+        reply['callback'] = request.params.get('callback')
+    return reply
 
 @login_service.get()
 @login_service.post()
@@ -248,13 +267,14 @@ def login(request):
         session['keys'] = keys
     if 'javascript' in request.response.content_type:
         response = session.get('keys');
+        if (request.params.get('callback')):
+            response['callback'] = request.params.get('callback')
     else:
         template = Template(filename=os.path.join('bipostaldash',
                 'templates', 'mainpage.mako'))
         response = Response(str(template.render(user=email,
                     keys=session.get('keys'),
                     request=request)))
-
     # set the beakerid
     session['uid'] = email
     session.save()
@@ -262,12 +282,16 @@ def login(request):
 
 @user.get()
 def get_user(request):
+    import pdb; pdb.set_trace();
     auth = request.registry.get('dash_auth', DefaultAuth())
     email = auth.get_user_id(request)
     if email is None:
         return http.HTTPForbidden()
     db = request.registry['storage']
-    return db.get_user(email)
+    reply = db.get_user(email)
+    if (request.params.get('callback')):
+        reply['callback'] = request.params.get('callback')
+    return reply
 
 @user.post()
 def update_user(request):
@@ -281,11 +305,44 @@ def update_user(request):
         db = request.registry['storage']
         user_info = db.get_user(email)
         metainfo = user_info.get('metainfo', {}).update(metainfo)
-        return db.create_user(email, alias, metainfo)
+        reply = db.create_user(email, alias, metainfo)
+        if (request.params.get('callback')):
+            reply['callback'] = request.params.get('callback')
+        return reply
     except Exception, e:
         logger.error('Could not update record: [%s]' % repr(e))
         raise
 
-@stime.get()
+
+# statics
 def stime(request):
-    return {'time': int(time.time())}
+    reply = {'time': int(time.time())}
+    if (request.params.get('callback')):
+        reply['callback'] = request.params.get('callback')
+    return reply
+
+
+def worker(request):
+    session = request.session
+    config = request.registry.get('config', {})
+    if (session.get('uid')):
+        template = Template(filename=os.path.join('bipostaldash',
+                'templates', 'worker.mako'))
+        response = Response(str(template.render(session=session,
+                config=config,
+                request=request)))
+        return response
+    raise http.HTTPForbidden()
+
+
+@statics.get()
+def statics(request):
+    cmds = {'time': stime,
+            'worker': worker}
+    cmd = request.matchdict.get('cmd')
+    if cmd in cmds:
+        cmd = cmds.get(cmd)
+        return cmd(request)
+    raise http.HTTPNotFound()
+
+

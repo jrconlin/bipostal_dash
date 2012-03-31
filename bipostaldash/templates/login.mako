@@ -12,7 +12,7 @@
       <div id="browserid"><img src="https://browserid.org/i/sign_in_grey.png" id="signin"></div>
       <footer>&nbsp;</footer>
       <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js" type="text/javascript"></script>
-      <script src="http://browserid.org/include.js" type="text/javascript"></script>
+      <script id='bidjs' src="https://browserid.org/include.js" type="text/javascript"></script>
       <script type="text/javascript">
           $(function() {
              $('#signin').click(function(){
@@ -25,8 +25,10 @@
                       "</form>").appendTo('#browserid');
                   form.submit();
               })
-          });
-          $('#signin').attr('src', "https://browserid.org/i/sign_in_blue.png");
+              });
+             $('#bidjs').ready(function() {
+                 $('#signin').attr('src', "http://browserid.org/i/sign_in_blue.png");
+                 })
       });
       </script>
   </body>

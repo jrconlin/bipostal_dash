@@ -1,4 +1,3 @@
-
 console.debug('starting binject');
 
 var bp = new function() {
@@ -18,58 +17,69 @@ var bp = new function() {
     };
 
     this.sendCmd = function(uri, args) {
-        console.debug('sending command ' + uri);
+        //console.debug('sending command ' + uri);
         id = this.rnd(1000000);
         if (args == undefined) {
             args = {};
         }
-        args['callback_id'] = 'c_' + id;
+        args['callback'] = 'c_' + id;
         try {
-            this.data.cb[args.callback_id] = {'success': args.success,
+            this.data.cb[args.callback] = {'success': args.success,
                 'error': args.error};
             var send = JSON.stringify({'cmd': uri, 'args': args });
-            console.debug('posting ' + send)
+            //console.debug('posting ' + send + ' ' + this.data.host)
             this.data.worker.contentWindow.postMessage(send,
                 this.data.host);
         } catch (e)  { // ...if e instanceof FooError
-            console.error('Exception: ', e);
-            if (this.data.cb[args.callback_id].error) {
-                this.data.cb[args.callback_id].error({'exception': e});
+            //console.error('Exception: ', e);
+            if (this.data.cb[args.callback].error) {
+                this.data.cb[args.callback].error({'exception': e});
             }
-            delete this.data.cb[args.callback_id];
+            delete this.data.cb[args.callback];
         }
     };
 
     this.recvMsg = function(event){
-        log.debug(event.origin);
+        //console.debug(event.origin);
         try {
             rep = JSON.parse(event.data);
-            if (rep.callback_id) {
-                callback = this.data.cb[rep.callback_id];
-                delete this.data.cb[rep.callback_id];
-                delete rep.callback_id;
+            if (rep.callback) {
+                callback = bp.data.cb[rep.callback];
+                delete bp.data.cb[rep.callback];
+                delete rep.callback;
                 if (callback && callback.success) {
                     return callback.success(rep);
                 }
             }
-            log.debug('No callback present');
+            //console.debug('No callback present');
         } catch (e) {
             console.error('Exception: ', e);
         }
     };
 
     this.getAliases = function(host) {
-        console.info('checking aliases');
+        //console.info('checking aliases');
         if (host == undefined) {
             host = this.data.host;
         }
         this.sendCmd('aliases',
                 {'origin': host,
                  'success': function(resp) { 
-                console.info('got aliases');
-                rep = JSON.parse(resp);
-                if (rep.data && rep.data.length) {
-                    // TODO add items from response as addresses
+                //console.info('got aliases');
+                if (resp.results && resp.results.length) {
+                    //console.info('got data');
+                    //console.info(resp.results);
+                    mailList = document.getElementById('selectEmail').getElementsByClassName('inputs')[0];
+                    for (i=0; i < resp.results.length; i++) {
+                        alias = resp.results[i];
+                        addr = document.createElement('li');
+                        aliasName = 'alias' + i;
+                        addr.innerHTML = '<label class="serif selectable" title="Alias for '+
+                            alias.origin + '" for="' + aliasName +'" ><input id="' + aliasName +
+                            '" type="radio" value="' + alias.alias + '" name="email" />' +
+                            "Alias for " + alias.origin + "</label>";
+                        mailList.appendChild(addr);
+                    }
                 } else {
                     // TODO display the "Generate" link
                     var bpElement = document.createElement('a');
@@ -90,14 +100,18 @@ var bp = new function() {
             document.getElementsByTagName('body')[0].appendChild(scr);
         }
         var worker = document.createElement('iframe');
-        alert (this.data.host + '/worker.html');
         worker.id = 'worker';
-        worker.src = this.data.host + '/worker.html';
-        //worker.style.display='none';
+        worker.src = this.data.host + '/s/worker';
+        worker.style.display = 'none';
+        worker.addEventListener('load', 
+                function(){
+                    bp.getAliases(document.getElementById('sitename').innerHTML);
+                }, false);
         document.getElementsByTagName('body')[0].appendChild(worker);
-        worker.contentWindow.addEventListener('message', this.recvMsg, false);
+        window.addEventListener('message', this.recvMsg, false);
         this.data.worker = worker;
-        
+        window.my_worker = worker;
+        //console.info('built worker');
     };
 
     this.init();
@@ -119,5 +133,3 @@ bpM.className = 'emphasize';
 bpM.innerHTML = "Manage your aliases";
 une.appendChild(document.createElement('br'));
 une.appendChild(bpM);
-console.info('here');
-bp.getAliases(document.getElementById('sitename').innerHTML)
