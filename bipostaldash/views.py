@@ -57,6 +57,9 @@ def make_alias(length=64, domain=None, prefix=None, **kw):
 
 @gen_alias.get()
 def new_alias(request, root=None, domain=None, prefix=None, **kw):
+    params = dict(request.params.items())
+    if (request.json_body):
+        params = dict(params.items() + request.json_body.items())
     config = request.registry.get('config', {})
     if domain is None:
         domain = default_domain(request)
@@ -65,8 +68,8 @@ def new_alias(request, root=None, domain=None, prefix=None, **kw):
         if prefix is not None:
             prefix = str(prefix).rjust(config.get('global.shard_pad', 3), '0')
     reply = {'alias': make_alias(domain=domain, prefix=prefix)}
-    if (request.params.get('callback')):
-        reply['callback'] = request.params.get('callback')
+    if (params.get('callback')):
+        reply['callback'] = params.get('callback')
     return reply
 
 @aliases.get()
@@ -80,7 +83,6 @@ def list_aliases(request):
             raise http.HTTPUnauthorized()
         aliases = db.get_aliases(user=email) or []
         reply = {'email': email, 'aliases': aliases}
-        import pdb; pdb.set_trace();
         if (request.params.get('callback')):
             reply['callback'] = request.params.get('callback')
         return reply
@@ -93,6 +95,9 @@ def list_aliases(request):
 def add_alias(request):
     db = request.registry['storage']
     auth = request.registry.get('auth', DefaultAuth)
+    params = dict(request.params.items())
+    if (request.json_body):
+        params = dict(params.items() + request.json_body.items())
     try:
         email = auth.get_user_id(request)
     except Exception, e:
@@ -123,8 +128,8 @@ def add_alias(request):
     reply = db.add_alias(email=email, user=email, 
             alias=alias, origin=audience)
     logger.info('New alias for %s.', email)
-    if (request.params.get('callback')):
-        reply['callback'] = request.params.get('callback')
+    if (params.get('callback')):
+        reply['callback'] = params.get('callback')
     return reply
 
 
@@ -166,6 +171,9 @@ def delete_alias(request):
 @alias_detail.put()
 def change_alias(request):
     """Make a change to an existing alias."""
+    params = dict(request.params.items())
+    if (request.json_body):
+        params = dict(params.items() + request.json_body.items())
     try:
         status = request.json_body['status']
         if (status not in ('active', 'inactive', 'deleted')):
@@ -183,8 +191,8 @@ def change_alias(request):
     db = request.registry['storage']
     alias = request.matchdict['alias']
     reply = db.set_status_alias(user=email, alias=alias, status=status)
-    if (request.params.get('callback')):
-        reply['callback'] = request.params.get('callback')
+    if (params.get('callback')):
+        reply['callback'] = params.get('callback')
     return reply
 
 
@@ -238,6 +246,13 @@ def logout(request):
 @login_service.post()
 def login(request):
     """ Accept the browserid auth element """
+    params = dict(request.params.items())
+    try:
+        if (request.json_body):
+            params = dict(params.items() + request.json_body.items())
+    except ValueError:
+        # there was no json body. Pass.
+        pass
     try:
         session = request.session
         config = request.registry.get('config', {})
@@ -282,7 +297,6 @@ def login(request):
 
 @user.get()
 def get_user(request):
-    import pdb; pdb.set_trace();
     auth = request.registry.get('dash_auth', DefaultAuth())
     email = auth.get_user_id(request)
     if email is None:
@@ -300,14 +314,17 @@ def update_user(request):
         email = auth.get_user_id(request)
         alias = request.json_body.get('alias', email)
         metainfo = request.json_body.get('metainfo', None)
+        params = dict(request.params.items())
+        if (request.json_body):
+            params = dict(params.items() + request.json_body.items())
         if email is None:
             return http.HTTPForbidden()
         db = request.registry['storage']
         user_info = db.get_user(email)
         metainfo = user_info.get('metainfo', {}).update(metainfo)
         reply = db.create_user(email, alias, metainfo)
-        if (request.params.get('callback')):
-            reply['callback'] = request.params.get('callback')
+        if (params.get('callback')):
+            reply['callback'] = params.get('callback')
         return reply
     except Exception, e:
         logger.error('Could not update record: [%s]' % repr(e))

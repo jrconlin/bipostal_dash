@@ -45,7 +45,8 @@
     }
 
     function handleReply(resp) {
-        if (resp.eventPhase == 2) {
+        log (xhr.readyState);
+        if (xhr.readyState === 4) {
             log ('handling reply');
             var reply;
             log(resp.target);
@@ -74,14 +75,20 @@
             var url = '';
             var method = '';
             var callback = cmd.args.callback || Math.floor(Math.random() * 1000000);
+            var args = undefined;
             callbacks[callback] = {'event': event};
-
 
             switch (cmd.cmd) {
                 case 'aliases':
                     url = '/origin/' + cmd.args.origin +
                         '?callback=' + callback;
                     method = 'GET';
+                    break;
+                case 'newalias':
+                    url = '/alias/';
+                    method = 'POST';
+                    args = {'audience': cmd.args.origin,
+                        'callback': callback};
                     break;
                 case 'logggedin':
                     url = '/user/' + 
@@ -96,7 +103,6 @@
             }
             xhr.open(method, url);
             xhr.setRequestHeader('Content-Type', 'application/json');
-
             // add the signature
             var skew =Math.floor(new Date().getTime() / 1000) - ${keys.get('server_time', int(time.time()))};
             //console.debug('Skew = ' + skew);
@@ -107,7 +113,10 @@
             xhr.setRequestHeader('Authorization', macauth.header);
             xhr.onreadystatechange = handleReply;
             log('sending event');
-            xhr.send();
+            if (args) {
+                args = JSON.stringify(args);
+            }
+            xhr.send(args);
       }, false);
     </script>
   </body>

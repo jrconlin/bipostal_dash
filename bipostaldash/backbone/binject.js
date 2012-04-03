@@ -5,7 +5,7 @@ var bp = new function() {
     var host = 'http://10.250.2.176';
 
     this.data = {
-        'siteName': document.getElementById('sitename').innerHTML,
+        'sitename': document.getElementById('sitename').innerHTML,
         'referrer': document.referrer,
         'worker': undefined,
         'host': host,
@@ -55,6 +55,40 @@ var bp = new function() {
         } catch (e) {
             console.error('Exception: ', e);
         }
+        if (callback && callback.error) {
+            return callback.error(rep);
+        }
+        return false;
+    };
+
+    this.newAlias = function() {
+        bp.sendCmd('newalias',
+                {'origin': bp.data.sitename,
+                'success': function(resp) {
+                    bp.addAlias({'results': [resp]});
+                    genLink = document.getElementById('newAlias');
+                    genLink.parentNode.removeChild(genLink);
+                    }
+                })
+    };
+
+    this.addAlias = function(resp){
+        //console.info('got aliases');
+        if (resp.results && resp.results.length) {
+            //console.info('got data');
+            //console.info(resp.results);
+            mailList = document.getElementById('selectEmail').getElementsByClassName('inputs')[0];
+            for (i=0; i < resp.results.length; i++) {
+                alias = resp.results[i];
+                addr = document.createElement('li');
+                aliasName = 'alias' + i;
+                addr.innerHTML = '<label class="serif selectable" title="Alias for '+
+                    alias.origin + '" for="' + aliasName +'" ><input id="' + aliasName +
+                    '" type="radio" value="' + alias.alias + '" name="email" />' +
+                    "Alias for " + alias.origin + "</label>";
+                    mailList.appendChild(addr);
+            }
+        }
     };
 
     this.getAliases = function(host) {
@@ -64,34 +98,22 @@ var bp = new function() {
         }
         this.sendCmd('aliases',
                 {'origin': host,
-                 'success': function(resp) { 
-                //console.info('got aliases');
-                if (resp.results && resp.results.length) {
-                    //console.info('got data');
-                    //console.info(resp.results);
-                    mailList = document.getElementById('selectEmail').getElementsByClassName('inputs')[0];
-                    for (i=0; i < resp.results.length; i++) {
-                        alias = resp.results[i];
-                        addr = document.createElement('li');
-                        aliasName = 'alias' + i;
-                        addr.innerHTML = '<label class="serif selectable" title="Alias for '+
-                            alias.origin + '" for="' + aliasName +'" ><input id="' + aliasName +
-                            '" type="radio" value="' + alias.alias + '" name="email" />' +
-                            "Alias for " + alias.origin + "</label>";
-                        mailList.appendChild(addr);
-                    }
-                } else {
-                    // TODO display the "Generate" link
+                 'success': function(resp) {
+                 if (resp.results && resp.results.length) {
+                    bp.addAlias(resp);
+                 } else {
                     var bpElement = document.createElement('a');
                     bpElement.href = '#';
                     bpElement.className = 'emphasize';
+                    bpElement.id = 'newAlias';
                     bpElement.innerHTML = "Generate an alias for this site";
-                    bpElement.addEventListener('click', bp.getAlias, false);
-                    var une = document.getElementById('useNewEmail').parentNode;
-                    une.appendChild(document.createElement('br'));
-                    une.appendChild(bpElement);
+                    bpElement.addEventListener('click', bp.newAlias, false);
+                    var une = document.getElementById('useNewEmail');
+                    une.parentNode.insertBefore(document.createElement('br'), une);
+                    une.parentNode.insertBefore(bpElement,une);
                 }
-            }})
+            }
+            })
     };
 
     this.init = function() {
@@ -103,9 +125,9 @@ var bp = new function() {
         worker.id = 'worker';
         worker.src = this.data.host + '/s/worker';
         worker.style.display = 'none';
-        worker.addEventListener('load', 
+        worker.addEventListener('load',
                 function(){
-                    bp.getAliases(document.getElementById('sitename').innerHTML);
+                    bp.getAliases(bp.data.sitename);
                 }, false);
         document.getElementsByTagName('body')[0].appendChild(worker);
         window.addEventListener('message', this.recvMsg, false);
@@ -119,6 +141,8 @@ var bp = new function() {
     return {
         'data': this.data,
         'getAliases': this.getAliases,
+        'addAlias': this.addAlias,
+        'newAlias': this.newAlias,
         'sendCmd': this.sendCmd,
         'recvMsg': this.recvMsg,
         'rnd': this.rnd,
