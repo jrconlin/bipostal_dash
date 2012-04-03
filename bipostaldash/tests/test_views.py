@@ -20,7 +20,10 @@ class JSONRequest(testing.DummyRequest):
 
     @property
     def json_body(self):
-        return json.loads(self.body, encoding=self.charset)
+        try:
+            return json.loads(self.body, encoding=self.charset)
+        except ValueError:
+            return None
 
 
 class DummyAuth(object):
