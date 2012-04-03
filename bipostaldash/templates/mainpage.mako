@@ -28,6 +28,7 @@
           <input name="audience" id="audience" value="bipostal.diresworb.org">
       </span>
       <button id="new">Get a new alias.</button>
+    <h3>Aliases</h3>
     <ul id="aliases">
     </ul>
     <footer>
@@ -165,7 +166,7 @@
             //console.debug(this.model);
             var alias = this.model.get('alias');
             var cls = this.model.get('status') || 'active';
-            var html = '<span>' + alias + '</span>';
+            var html = '<span title="' + alias + '">' + alias.split('@')[1] + '</span>';
             html += '<span="controls"><button class="disable" title="Toggle availability">';
             html += disable_labels[cls != 'active'];
             html += '</button>';
